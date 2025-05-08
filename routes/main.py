@@ -3,8 +3,9 @@ import os, time, json
 from flask import Blueprint, render_template, send_file, Response, jsonify, request
 import markdown2
 import config
-from db.connection import connect_db
+# from db.connection import connect_db
 import state  # import module state
+from db.firestore_client import db
 
 main_bp = Blueprint("main", __name__)
 
@@ -66,14 +67,12 @@ def stream(search_id):
 
 @main_bp.route("/job/<job_id>")
 def job(job_id):
-    conn = connect_db()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM jobs WHERE job_id=%s", (job_id,))
-            j = cur.fetchone()
-        return jsonify(j)
-    finally:
-        conn.close()
+    doc = db.collection("jobs").document(job_id).get()
+    if not doc.exists:
+        return jsonify({"error": "Not found"}), 404
+    data = doc.to_dict()
+    data["job_id"] = job_id
+    return jsonify(data)
 
 @main_bp.route("/send_message", methods=["POST"])
 def send_message():

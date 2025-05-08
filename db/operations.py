@@ -1,78 +1,43 @@
-import pymysql
-from db.connection import connect_db
-import config
-
+# db/operations.py
+from db.firestore_client import db
+import state
 
 def save_job_to_db(job_details, keyword, send_job_callback=None):
     """
-    Lưu chi tiết job vào database. Nếu truyền send_job_callback,
-    sẽ gọi callback đó sau khi commit để đẩy sự kiện SSE.
+    Lưu (hoặc cập nhật) document với ID = job_id vào collection 'jobs'.
     """
-    conn = connect_db()
-    try:
-        with conn.cursor() as cursor:
-            # Xóa nếu đã tồn tại
-            cursor.execute("SELECT job_id FROM jobs WHERE job_id=%s",
-                           (job_details.get('job_id'),))
-            if cursor.fetchone():
-                cursor.execute("DELETE FROM jobs WHERE job_id=%s",
-                               (job_details.get('job_id'),))
-            # Chèn mới
-            sql = """
-                INSERT INTO jobs
-                (job_id, title, company_name, posted_time, num_applicants,
-                 seniority_level, employment_type, job_function, industries,
-                 place, job_description, submit_time, keyword)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(sql, (
-                job_details.get('job_id', 'None'),
-                job_details.get('title', 'None'),
-                job_details.get('company_name', 'None'),
-                job_details.get('posted_time', 'None'),
-                job_details.get('num_applicants', '<25'),
-                job_details.get('seniority_level', 'None'),
-                job_details.get('employment_type', 'None'),
-                job_details.get('job_function', 'None'),
-                job_details.get('industries', 'None'),
-                job_details.get('place', 'None'),
-                job_details.get('job_description', 'None'),
-                job_details.get('submit_time', 'None'),
-                keyword
-            ))
-        conn.commit()
-    finally:
-        conn.close()
-
-    # Gọi callback (nếu có)
+    doc_ref = db.collection("jobs").document(job_details["job_id"])
+    # Chuẩn bị dữ liệu
+    data = {
+        "title": job_details.get("title"),
+        "company_name": job_details.get("company_name"),
+        "posted_time": job_details.get("posted_time"),
+        "num_applicants": job_details.get("num_applicants"),
+        "seniority_level": job_details.get("seniority_level"),
+        "employment_type": job_details.get("employment_type"),
+        "job_function": job_details.get("job_function"),
+        "industries": job_details.get("industries"),
+        "place": job_details.get("place"),
+        "job_description": job_details.get("job_description"),
+        "submit_time": job_details.get("submit_time"),
+        "keyword": keyword.lower(),
+    }
+    doc_ref.set(data)  # tạo mới hoặc ghi đè
     if send_job_callback:
         send_job_callback(job_details)
 
 
 def get_existing_job_ids_from_db(keyword):
     """
-    Trả về danh sách job_id đã lưu trong DB cho keyword
+    Trả về list các job_id đã lưu với trường keyword khớp.
     """
-    conn = connect_db()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT job_id FROM jobs WHERE LOWER(keyword)=LOWER(%s)",
-                (keyword,)
-            )
-            return [row['job_id'] for row in cursor.fetchall()]
-    finally:
-        conn.close()
+    col = db.collection("jobs")
+    qs = col.where("keyword", "==", keyword.lower()).stream()
+    return [doc.id for doc in qs]
+
 
 def delete_job_from_db(job_id):
     """
-    Xóa bản ghi job với job_id khỏi database.
+    Xóa document có ID = job_id.
     """
-    conn = connect_db()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM jobs WHERE job_id = %s", (job_id,))
-        conn.commit()
-    finally:
-        conn.close()
-
+    db.collection("jobs").document(job_id).delete()
