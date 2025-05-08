@@ -4,9 +4,11 @@ import datetime
 import json
 import google.generativeai as genai
 import config
-from db.connection import connect_db
+# from db.connection import connect_db
+from db.firestore_client import db
 
-from state import chat_sessions, current_chat_index
+# from state import chat_sessions, current_chat_index
+import state
 from routes.main import main_bp
 from routes.search import search_bp
 
@@ -23,34 +25,23 @@ model = genai.GenerativeModel(
     system_instruction=config.SYSTEM_INSTRUCTION,
 )
 
-# Global variable to store chat sessions
-# chat_sessions = {}
-# current_chat_index = 0  # Index for naming chat sessions
-
 # Function to export jobs to a JSON file based on the keyword
 def export_jobs_to_file(keyword):
-    connection = connect_db()
-    try:
-        with connection.cursor() as cursor:
-            # Select jobs based on keyword
-            sql = "SELECT * FROM jobs WHERE LOWER(keyword) = LOWER(%s)"
-            cursor.execute(sql, (keyword,))
-            jobs = cursor.fetchall()
+    docs = db.collection("jobs") \
+             .where("keyword", "==", keyword.lower()) \
+             .stream()
 
-            # Define the path for the knowledge file
-            file_path = config.KNOWLEDGE_FILE_PATH
+    jobs = []
+    for doc in docs:
+        data = doc.to_dict()
+        # nếu có trường submit_time kiểu timestamp
+        if isinstance(data.get("submit_time"), datetime.datetime):
+            data["submit_time"] = data["submit_time"].strftime("%Y-%m-%d %H:%M")
+        data["job_id"] = doc.id
+        jobs.append(data)
 
-            # Convert the datetime objects to strings
-            for job in jobs:
-                for key, value in job.items():
-                    if isinstance(value, datetime.datetime):
-                        job[key] = value.strftime('%Y-%m-%d %H:%M:%S')
-
-            # Write the jobs to the knowledge.json file
-            with open(file_path, "w", encoding="utf-8") as file:
-                json.dump(jobs, file, ensure_ascii=False, indent=4)
-    finally:
-        connection.close()
+    with open(config.KNOWLEDGE_FILE_PATH, "w", encoding="utf-8") as f:
+        json.dump(jobs, f, ensure_ascii=False, indent=2)
 
 # Read the content from knowledge.json if it exists
 def read_knowledge_file():
@@ -64,14 +55,14 @@ def read_knowledge_file():
 
 # Function to export and update the chat content
 def export_and_update_chat():
-    global chat_sessions, current_chat_index
+    # global chat_sessions, current_chat_index
 
     # Tạo tên cho chat session mới
-    chat_name = f"chat{current_chat_index}"
+    chat_name = f"chat{state.current_chat_index}"
     print(f"Creating new chat session: {chat_name}")
 
     # Tạo chat session mới
-    chat_sessions[chat_name] = model.start_chat(
+    state.chat_sessions[chat_name] = model.start_chat(  
         history=[
             {
                 "role": "model",
@@ -80,7 +71,7 @@ def export_and_update_chat():
         ]
     )
     
-    current_chat_index += 1  # Tăng chỉ số cho phiên chat tiếp theo
+    state.current_chat_index += 1  # Tăng chỉ số cho phiên chat tiếp theo
 
     # Log thông tin
     print(f"Chat session {chat_name} created successfully.")
@@ -88,15 +79,15 @@ def export_and_update_chat():
 
 # Function to continue an existing chat session
 def continue_chat_session():
-    global chat_sessions, current_chat_index
+    # global chat_sessions, current_chat_index
 
     # Sử dụng phiên chat hiện tại
-    chat_name = f"chat{current_chat_index - 1}"
+    chat_name = f"chat{state.current_chat_index - 1}"
     print(f"Continuing chat session: {chat_name}")
 
-    if chat_name in chat_sessions:
+    if chat_name in state.chat_sessions:
         # Lưu lại toàn bộ lịch sử chat hiện tại, không bao gồm knowledge cũ
-        chat_history = chat_sessions[chat_name].history
+        chat_history = state.chat_sessions[chat_name].history
         chat_history = [
             {
                 "role": entry.role,
@@ -108,7 +99,7 @@ def continue_chat_session():
         file_content = read_knowledge_file()
 
         # Tạo lại chat với nội dung knowledge mới và lịch sử chat cũ
-        chat_sessions[chat_name] = model.start_chat(
+        state.chat_sessions[chat_name] = model.start_chat(
             history=chat_history + [
                 {
                     "role": "model",

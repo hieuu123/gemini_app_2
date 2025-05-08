@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 # Load các biến môi trường từ .env
 load_dotenv()
 
+FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
+FIREBASE_PROJECT_ID     = os.getenv("FIREBASE_PROJECT_ID")
+
 # === Database configuration ===
 DB_HOST     = os.getenv("DB_HOST", "localhost")
 DB_PORT     = int(os.getenv("DB_PORT", 3360))
