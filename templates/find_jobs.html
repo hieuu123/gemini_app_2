@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gemini Job Finder</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body>
+    <div class="header-div">
+        <h2>Gemini Job Finder</h2>
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThr7qrIazsvZwJuw-uZCtLzIjaAyVW_ZrlEQ&s" alt="" height="38px" width="auto">
+        <form id="job-form">
+            <span>Keyword</span>
+            <input type="text" name="keyword">
+            <button type="submit" id="search-btn"><i class="fa fa-search" aria-hidden="true"></i></button>
+        </form>
+    </div>
+
+    <div id="log-container" style="display:none;">
+        <div id="log" style="overflow-y: auto;"></div>
+    </div>
+
+    <div id="jobs-container" class="container">
+        <div id="job-list" class="column"></div>
+        <div id="job-details" class="column"></div>
+    </div>
+
+    <!-- Chatbox Container -->
+    <div id="chatbox-container">
+        <div id="chatbox-header" onclick="toggleChatbox()" style="display: flex; justify-content: center; align-items: center; position: relative;">
+            <span style="flex: 1; text-align: center;">Chatbot - Jack</span>
+            <i class="fa fa-caret-down" style="position: absolute; right: 20px;"></i>
+        </div>
+        <div id="chatbox"></div>
+        <div id="input-container">
+            <input type="text" id="input" placeholder="Enter message..." onkeydown="if (event.key === 'Enter') sendMessage()">
+            <button id="send-btn" onclick="sendMessage()"><i class="fa fa-chevron-circle-right" aria-hidden="true" style="color:#007bff;"></i></button>
+        </div>
+    </div>
+
+    <!-- Chatbox Toggle Button -->
+    <button id="chatbox-toggle" onclick="toggleChatbox()">
+        <i class="fas fa-comment-dots"></i>
+    </button>
+
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script>
+        function toggleChatbox() {
+            const chatboxContainer = document.getElementById('chatbox-container');
+            const chatboxToggle = document.getElementById('chatbox-toggle');
+
+            if (chatboxContainer.style.display === 'none' || chatboxContainer.style.display === '') {
+                chatboxContainer.style.display = 'flex';
+                chatboxToggle.style.display = 'none';
+            } else {
+                chatboxContainer.style.display = 'none';
+                chatboxToggle.style.display = 'block';
+            }
+        }
+
+        let thinkingMessage;
+        let dotInterval;
+
+        function appendMessage(sender, message, isThinking = false) {
+            const chatbox = document.getElementById('chatbox');
+            const msg = document.createElement('div');
+            if (isThinking) {
+                msg.classList.add('thinking');
+                msg.setAttribute('id', 'thinkingMessage');
+            }
+            if (sender === 'Chatbot') {
+                msg.innerHTML = `<br><strong>${sender}:</strong> ${message}`;
+            } else {
+                msg.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            }
+            chatbox.appendChild(msg);
+            chatbox.scrollTop = chatbox.scrollHeight;
+            return msg;
+        }
+
+        function showThinking() {
+            thinkingMessage = appendMessage('Chatbot', '<i>Chatbot is thinking<span id="dots">...</span></i><br><br>', true);
+            let dots = document.getElementById('dots');
+            dotInterval = setInterval(() => {
+                if (dots.innerHTML.length >= 3) {
+                    dots.innerHTML = '';
+                } else {
+                    dots.innerHTML += '.';
+                }
+            }, 500);
+        }
+
+        function hideThinking() {
+            clearInterval(dotInterval);
+            if (thinkingMessage) {
+                thinkingMessage.remove();
+                thinkingMessage = null;
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('input');
+            const message = input.value;
+            if (message.trim() === '') return;
+
+            appendMessage('You', message);
+            input.value = '';
+            showThinking();
+
+            fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideThinking();
+                appendMessage('Chatbot', data.response);
+            })
+            .catch(error => {
+                hideThinking();
+                console.error('Error:', error);
+                appendMessage('Chatbot', 'Có lỗi xảy ra, vui lòng thử lại.');
+            });
+        }
+    </script>
+</body>
+</html>
