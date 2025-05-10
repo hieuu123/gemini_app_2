@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Manage Applicants</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}">
+  <style>
+    body { background: #f8f9fa; }
+    #loader { position:fixed; top:0; left:0; width:100%; height:100%; display:flex;
+      justify-content:center; align-items:center; background:#fff; z-index:9999; }
+    .applicant-card { margin-bottom:1rem; }
+  </style>
+</head>
+<body>
+  <div id="loader">
+    <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+  </div>
+  <div class="container py-5" id="content" style="display:none;">
+    <h2 class="mb-4 text-center">Applicants for job: {{ job_title }}</h2>
+    <div id="applicants-list" class="row gy-3">
+      <!-- JS sẽ render ở đây -->
+    </div>
+  </div>
+
+  <!-- Firebase + Firestore config -->
+  <script type="module" src="{{ url_for('static', filename='js/firebaseConfig.js') }}"></script>
+  <!-- Logic quản lý applicants -->
+  <script type="module" src="{{ url_for('static', filename='js/manage_applicants.js') }}"></script>
+</body>
+</html>

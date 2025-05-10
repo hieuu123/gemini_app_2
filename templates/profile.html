@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Chỉnh sửa hồ sơ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet">
+  <style>
+    body { background: #f4f6f8; }
+    .profile-container {
+      max-width: 500px;
+      margin: 80px auto;
+      padding: 30px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-container">
+    <h3 class="text-center mb-4">Chỉnh sửa hồ sơ</h3>
+    <form id="profile-form">
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" name="email" readonly>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Họ và tên</label>
+        <input type="text" class="form-control" name="name" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Số điện thoại</label>
+        <input type="tel" class="form-control" name="phone" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Lưu thay đổi</button>
+    </form>
+  </div>
+
+  <!-- Firebase + Profile script -->
+  <script type="module" src="{{ url_for('static', filename='js/firebaseConfig.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/profile.js') }}"></script>
+</body>
+</html>

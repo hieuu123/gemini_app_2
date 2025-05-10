@@ -36,7 +36,7 @@ REQUEST_HEADERS = {
 
 # === Chatbot (Gemini) configuration ===
 API_KEY = os.getenv("API_KEY")
-MODEL_NAME = "gemini-1.5-flash"
+MODEL_NAME = "gemini-2.0-flash"
 GENERATION_CONFIG = {
     "temperature": 1,
     "top_p": 0.95,
@@ -49,7 +49,7 @@ SYSTEM_INSTRUCTION = (
     "based on user preferences (salary, job type, hours, etc.) without repeatedly "
     "asking for details. Use the latest knowledge.json data, updated three times per session. "
     "Communicate clearly and concisely, keeping responses brief yet informative. "
-    "When recommending a job, include a brief introduction and a link: "
+    "When recommending a job, include a brief introduction and a link opened in new tab: "
     "<a href='https://www.linkedin.com/jobs/view/job_id' target='_blank'>See details</a>. "
     "Ideally, suggest 3-5 jobs per consultation."
 )

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <title>Việc tôi đã ứng tuyển</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}"
+    >
+    <style>
+      body { background: #f8f9fa; }
+      .job-card { cursor: pointer; margin-bottom: 20px;}
+      .job-card:hover { background: #f1f1f1; }
+      .me-3 {
+        border: 1px solid #cde1ff;
+        border-radius: 4px;
+        margin-right: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loader" class="justify-content-center align-items-center" style="height:100vh; display: flex">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+    <div class="container py-5">
+      <h2 class="mb-4 text-center">My Jobs</h2>
+      <div id="applied-jobs-list" class="row gy-3">
+        <!-- JS sẽ đổ các phần tử ở đây -->
+      </div>
+    </div>
+
+    <!-- Firebase + Firestore -->
+    <script type="module" src="{{ url_for('static', filename='js/firebaseConfig.js') }}"></script>
+    <!-- Logic load danh sách -->
+    <script type="module" src="{{ url_for('static', filename='js/my_jobs.js') }}"></script>
+  </body>
+</html>

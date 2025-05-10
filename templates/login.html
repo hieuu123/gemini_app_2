@@ -1,0 +1,45 @@
+<!-- templates/login.html -->
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <title>Đăng nhập</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="{{ url_for('static',filename='assets/css/bootstrap.min.css') }}" rel="stylesheet">
+    <style>
+      body { background: #f4f6f8; }
+      .auth-container {
+        max-width: 400px;
+        margin: 80px auto;
+        padding: 30px;
+        background: #fff;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-container">
+      <h3 class="text-center mb-4">Đăng nhập</h3>
+      <form id="signin-form">
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input type="email" class="form-control" name="email" required>
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">Mật khẩu</label>
+          <input type="password" class="form-control" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+      </form>
+      <p class="text-center mt-3">
+        Chưa có tài khoản? <a href="{{ url_for('main.register') }}">Đăng ký</a>
+      </p>
+    </div>
+
+    <!-- Firebase Auth scripts -->
+    <script type="module" src="{{ url_for('static',filename='js/firebaseConfig.js') }}"></script>
+    <script type="module" src="{{ url_for('static',filename='js/auth.js') }}"></script>
+  </body>
+</html>

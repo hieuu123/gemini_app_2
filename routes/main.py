@@ -9,6 +9,55 @@ from db.firestore_client import db
 
 main_bp = Blueprint("main", __name__)
 
+@main_bp.route("/login", methods=["GET"])
+def login():
+    return render_template("login.html")
+
+@main_bp.route("/register", methods=["GET"])
+def register():
+    return render_template("register.html")
+
+@main_bp.route("/profile")
+def profile():
+    return render_template("profile.html")
+
+@main_bp.route("/post_job", methods=["GET"])
+def post_job():
+    return render_template("post_job.html")
+
+@main_bp.route("/manage_jobs", methods=["GET"])
+def manage_jobs():
+    return render_template("manage_jobs.html")
+
+@main_bp.route('/my_job/<job_id>')
+def job_detail(job_id):
+    """
+    Trang chi tiết công việc tự đăng.
+    JS phía client (job_details2.js) sẽ đọc `window.location.pathname`
+    để lấy job_id và fetch dữ liệu từ Firestore.
+    """
+    return render_template('job_self_posted_details.html')
+
+@main_bp.route('/edit_job.html')
+def edit_job():
+    return render_template('edit_job.html')
+
+@main_bp.route("/my_applications")
+def my_applications():
+    return render_template("my_jobs.html")
+
+@main_bp.route("/manage_applicants/<job_id>")
+def manage_applicants(job_id):
+    # Lấy dữ liệu job từ Firestore
+    job_doc = db.collection("jobs_self_posted").document(job_id).get()
+    if job_doc.exists:
+        job_title = job_doc.to_dict().get("title", "–")
+    else:
+        job_title = "Unknown Job"
+    return render_template("manage_applicants.html",
+                           job_id=job_id,
+                           job_title=job_title)
+
 @main_bp.route("/", methods=["GET"])
 def index():
     return render_template("index.html")

@@ -31,10 +31,10 @@
     cursor: pointer;
 }
 
-.container {
+/* .container {
     display: flex;
     height: 80vh;
-}
+} */
 
 .column {
     flex: 1;
@@ -204,3 +204,44 @@
     color: white;
     text-decoration: none;
 }
+
+/* Đặt trong styles.css */
+#jobs-container {
+    display: flex;             /* flex hai cột */
+    height: calc(100vh - 140px);/* chiều cao trừ header + header-div (ước lượng khoảng 120px) */
+    gap: 20px;                  /* khoảng cách giữa hai cột */
+    padding: 10px;             /* nếu cần khoảng đệm */
+  }
+  
+  /* các cột con */
+  #jobs-container .column {
+    flex: 1;                   /* mỗi cột chiếm 50% */
+    overflow-y: auto;          /* scroll nếu nội dung quá cao */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background: #fff;
+  }
+
+#chatbox a {
+    color: black;
+    font-weight: 700;
+    text-decoration: underline;
+}  
+
+.company-img.me-3 {
+    width: 80px;
+    height: auto;
+    border: 1px solid #cde1ff;
+    border-radius: 4px;
+    margin-right: 20px;
+}
+
+.company-img.me-3 img {
+    width: 100%;
+}
+
+#apply-btn {
+    padding: 15px;
+}
+  

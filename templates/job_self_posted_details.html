@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Chi tiết công việc</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <style>
+    body { background: #f8f9fa; }
+    .job-header { margin: 2rem 0; }
+    .company-logo {
+      width: 100px; height: 100px;
+      border: 1px solid #cde1ff; border-radius: 6px;
+      display:flex; align-items:center; justify-content:center;
+      background:#fff; overflow:hidden;
+    }
+    .company-logo img { max-width:100%; max-height:100%; }
+    .badge-job { font-size:.9rem; }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <div id="job-not-found" class="alert alert-danger" style="display:none;">
+      Không tìm thấy công việc!
+    </div>
+
+    <div id="job-detail" style="display:none;">
+      <div class="job-header text-center">
+        <div class="company-logo mx-auto mb-3">
+          <img id="job-logo" src="" alt="Logo công ty">
+        </div>
+        <h2 id="job-title"></h2>
+        <p class="text-secondary mb-1"><strong>Công ty:</strong> <span id="job-company"></span></p>
+        <p class="text-secondary mb-0">
+          <i class="fas fa-map-marker-alt"></i> <span id="job-place"></span>
+        </p>
+      </div>
+
+      <div class="row">
+        <!-- Left: mô tả -->
+        <div class="col-lg-8">
+          <h5>Mô tả công việc</h5>
+          <div id="job-description"></div>
+          <!--<h6>Kinh nghiệm</h6>
+          <p id="job-seniority"></p>
+          <h6>Số ứng viên</h6>
+          <p id="job-applicants"></p>
+          <h6>Từ khóa</h6>
+          <p id="job-keyword"></p>-->
+        </div>
+        <!-- Right: overview -->
+        <div class="col-lg-4">
+          <div class="card mb-3">
+            <div class="card-header">Thông tin nhanh</div>
+            <div class="card-body">
+              <p><strong>Đăng lúc:</strong> <span id="job-posted"></span></p>
+              <p><strong>Kinh nghiệm:</strong> <span id="job-seniority"></span></p>
+              <p><strong>Số ứng viên:</strong> <span id="job-applicants"></span></p>
+              <!--<p><strong>Thời gian submit:</strong> <span id="job-submit"></span></p>-->
+              <p>
+                <strong>Loại hình:</strong>
+                <span class="badge badge-job bg-transparent border border-primary text-primary">
+                  <span id="job-employment"></span>
+                </span>
+              </p>
+            </div>
+          </div>
+          <button id="apply-btn" class="btn btn-primary w-100 mt-3" style="display: none;">Ứng tuyển</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase + Firestore -->
+  <script type="module" src="{{ url_for('static', filename='js/firebaseConfig.js') }}"></script>
+  <!-- Script đổ dữ liệu chi tiết -->
+  <script type="module" src="{{ url_for('static', filename='js/job_details.js') }}"></script>
+  <!-- FontAwesome (cho icon) -->
+  <script src="https://kit.fontawesome.com/d3b4b6d594.js" crossorigin="anonymous"></script>
+</body>
+</html>
