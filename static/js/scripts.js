@@ -1,3 +1,6 @@
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+import { db } from "./firebaseConfig.js"; // đảm bảo bạn đã có
+
 document.addEventListener("DOMContentLoaded", () => {
   let eventSource = null;
   let currentJob = 0;
@@ -10,6 +13,44 @@ document.addEventListener("DOMContentLoaded", () => {
   const jobDetailsElem = document.getElementById("job-details");
   const chatboxContainer = document.getElementById("chatbox-container");
   const toggleLogBtn = document.getElementById("toggle-log");
+
+  async function loadSelfPostedJobs(searchKeyword) {
+    try {
+      const snapshot = await getDocs(collection(db, "jobs_self_posted"));
+      snapshot.forEach(docSnap => {
+        const job = docSnap.data();
+        const id  = docSnap.id;
+  
+        // nếu job.keyword không tồn tại hoặc không chứa searchKeyword thì bỏ qua
+        if (
+          !job.keyword ||
+          !job.keyword.toLowerCase().includes(searchKeyword.toLowerCase())
+        ) {
+          return;
+        }
+  
+        // tạo phần tử giống như onEventMessage
+        const jobItem = document.createElement("div");
+        jobItem.className   = "job-item";
+        jobItem.dataset.jobId = id;
+        jobItem.innerHTML = `
+          <strong>${job.title}</strong><br>
+          ${job.company_name}<br>
+          ${job.place}<br>
+          ${job.posted_time}
+        `;
+        jobItem.onclick = () => {
+          fetchJobDetails(id);
+          selectJobItem(jobItem);
+        };
+  
+        jobListElem.appendChild(jobItem);
+        currentJob++;  // đánh số tiếp theo cho scraped
+      });
+    } catch (err) {
+      console.error("Không load được jobs_self_posted:", err);
+    }
+  }
 
   // Hàm dọn dẹp SSE / hủy backend
   function cleanupSearch() {
@@ -40,6 +81,9 @@ document.addEventListener("DOMContentLoaded", () => {
     jobListElem.innerHTML = "";
     jobDetailsElem.innerHTML = "";
     currentJob = 0;
+
+    // Load trước các job tự đăng
+    await loadSelfPostedJobs(keyword);
 
     // 2) Mở chatbot nếu cần
     if (!chatboxContainer.style.display || chatboxContainer.style.display === "none") {
@@ -101,27 +145,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function fetchJobDetails(jobId) {
     fetch(`/job/${jobId}`)
-      .then((r) => r.json())
-      .then((data) => {
+      .then(r => r.json())
+      .then(data => {
         if (!data || !data.job_id) return;
+        // Chọn link & label dựa vào self_posted
+        let btnHtml;
+        if (data.self_posted) {
+          // job tự đăng → link về trang nội bộ
+          btnHtml = `<a href="/my_job/${data.job_id}" target="_blank">
+                       <button class="btn btn-primary" id="btn-details">View Job</button>
+                     </a>`;
+        } else {
+          // job scraped → đi LinkedIn
+          btnHtml = `<a href="https://www.linkedin.com/jobs/view/${data.job_id}" target="_blank">
+                       <button class="btn btn-primary" id="btn-details">View Job on LinkedIn</button>
+                     </a>`;
+        }
         jobDetailsElem.innerHTML = `
-            <h2>${data.title}</h2>
-            <a href="https://www.linkedin.com/jobs/view/${data.job_id}" target="_blank"><button class="btn btn-primary" id="btn-details">
-                View Job on LinkedIn
-            </button></a>
-            <p><strong>Company:</strong> ${data.company_name}</p>
-            <p><strong>Location:</strong> ${data.place}</p>
-            <p><strong>Posted:</strong> ${data.posted_time}</p>
-            <p><strong>Applicants:</strong> ${data.num_applicants}</p>
-            <p><strong>Seniority:</strong> ${data.seniority_level}</p>
-            <p><strong>Type:</strong> ${data.employment_type}</p>
-            <p><strong>Function:</strong> ${data.job_function}</p>
-            <p><strong>Industries:</strong> ${data.industries}</p>
-            <p><strong>Description:</strong></p>
-            <div>${data.job_description}</div>`;
+          <h2>${data.title}</h2>
+          ${btnHtml}
+          <p><strong>Company:</strong> ${data.company_name}</p>
+          <p><strong>Location:</strong> ${data.place}</p>
+          <p><strong>Posted:</strong> ${data.posted_time}</p>
+          <p><strong>Applicants:</strong> ${data.num_applicants}</p>
+          <p><strong>Seniority:</strong> ${data.seniority_level}</p>
+          <p><strong>Type:</strong> ${data.employment_type}</p>
+          ${!data.self_posted ? `<p><strong>Function:</strong> ${data.job_function}</p>
+                                  <p><strong>Industries:</strong> ${data.industries}</p>` : ""}
+          <p><strong>Description:</strong></p>
+          <div>${data.job_description}</div>
+        `;
       })
       .catch(console.error);
-  }
+  }  
 
   function selectJobItem(item) {
     document.querySelectorAll(".job-item").forEach((el) => el.classList.remove("selected"));
@@ -134,9 +190,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const links = document.querySelectorAll('#chatbox a');
   links.forEach(link => {
-      link.setAttribute('target', '_blank');
+    link.setAttribute('target', '_blank');
   });
 });
