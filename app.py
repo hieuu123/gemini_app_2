@@ -27,19 +27,32 @@ model = genai.GenerativeModel(
 
 # Function to export jobs to a JSON file based on the keyword
 def export_jobs_to_file(keyword):
-    docs = db.collection("jobs") \
-             .where("keyword", "==", keyword.lower()) \
-             .stream()
-
     jobs = []
-    for doc in docs:
+
+    # 1) Job scrape từ collection "jobs"
+    for doc in db.collection("jobs")\
+                 .where("keyword", "==", keyword.lower())\
+                 .stream():
         data = doc.to_dict()
-        # nếu có trường submit_time kiểu timestamp
+        # nếu cần: convert Timestamp thành chuỗi
         if isinstance(data.get("submit_time"), datetime.datetime):
             data["submit_time"] = data["submit_time"].strftime("%Y-%m-%d %H:%M")
         data["job_id"] = doc.id
         jobs.append(data)
 
+    # 2) Job tự đăng từ collection "jobs_self_posted"
+    for doc in db.collection("jobs_self_posted")\
+                 .where("keyword", "==", keyword)\
+                 .stream():
+        data = doc.to_dict()
+        # giữ nguyên các trường như trong Firestore
+        # chỉ thêm job_id để tiện sử dụng về sau
+        data["job_id"] = doc.id
+        # và gắn thêm flag để phân biệt nếu cần
+        data["self_posted"] = True
+        jobs.append(data)
+
+    # 3) Ghi ra file JSON
     with open(config.KNOWLEDGE_FILE_PATH, "w", encoding="utf-8") as f:
         json.dump(jobs, f, ensure_ascii=False, indent=2)
 

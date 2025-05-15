@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>All Jobs</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}">
+  <style>
+    body { background: #f8f9fa; }
+    .single-job-items {
+      border: 1px solid #cde1ff;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      transition: background .2s;
+    }
+    .single-job-items:hover {
+      background: #f1f8ff;
+    }
+    .company-img {
+      width: 60px; height: 60px;
+      border: 1px solid #cde1ff;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-right: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff;
+    }
+    .company-img img { max-width:100%; max-height:100%; }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <h2 class="text-center mb-4">All Jobs</h2>
+    <div id="all-jobs-container" class="row gy-3">
+      <!-- JS sẽ đổ các phần tử ở đây -->
+    </div>
+  </div>
+
+  <!-- Firebase + Firestore -->
+  <script type="module" src="{{ url_for('static', filename='js/firebaseConfig.js') }}"></script>
+  <!-- Logic load All Jobs -->
+  <script type="module" src="{{ url_for('static', filename='js/all_jobs.js') }}"></script>
+  <script src="https://kit.fontawesome.com/d3b4b6d594.js" crossorigin="anonymous"></script>
+</body>
+</html>

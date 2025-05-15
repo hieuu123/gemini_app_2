@@ -60,14 +60,15 @@
                                             <li><a href="{{ url_for('main.index') }}">Home</a></li>
                                             <li><a href="{{ url_for('main.find_jobs') }}">Find a Jobs </a></li>
                                             <li><a href="{{ url_for('main.about') }}">About</a></li>
-                                            <li><a href="#">Page</a>
+                                            <!-- <li><a href="#">Page</a>
                                                 <ul class="submenu">
                                                     <li><a href="{{ url_for('main.blog') }}">Blog</a></li>
                                                     <li><a href="{{ url_for('main.single_blog') }}">Blog Details</a></li>
                                                     <li><a href="elements.html">Elements</a></li>
                                                     <li><a href="job_details.html">job Details</a></li>
                                                 </ul>
-                                            </li>
+                                            </li> -->
+                                            <li><a href="{{ url_for('main.all_jobs') }}">All Jobs</a></li>
                                             <li><a href="contact.html">Contact</a></li>
                                         </ul>
                                     </nav>
@@ -99,7 +100,7 @@
                                             <li><a class="dropdown-item" href="#" id="btn-logout">Logout</a></li>
                                         </ul>
                                     </div>
-                                    <div id="notif-area" class="dropdown ms-3 user-only">
+                                    <span id="notif-area" class="dropdown ms-3 user-only">
                                         <button id="notif-btn"
                                                 class="btn btn-light position-relative"
                                                 type="button"
@@ -114,7 +115,7 @@
                                             style="min-width:300px; max-height:400px; overflow-y:auto;">
                                         <li class="text-center text-muted small">Chưa có thông báo</li>
                                         </ul>
-                                    </div>  
+                                    </span>  
                                 </div>
                             </div>
                         </div>
@@ -630,15 +631,14 @@
             </div>
         </div>
         <!-- footer-bottom area -->
-        <div class="footer-bottom-area footer-bg">
+        <!-- <div class="footer-bottom-area footer-bg">
             <div class="container">
                 <div class="footer-border">
                      <div class="row d-flex justify-content-between align-items-center">
                          <div class="col-xl-10 col-lg-10 ">
                              <div class="footer-copy-right">
-                                 <p><!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-  Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This template is made with <i class="fa fa-heart" aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a>
-  <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. --></p>
+                                 <p>
+  Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This template is made with <i class="fa fa-heart" aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a></p>
                              </div>
                          </div>
                          <div class="col-xl-2 col-lg-2">
@@ -652,14 +652,15 @@
                      </div>
                 </div>
             </div>
-        </div>
+        </div> -->
         <!-- Footer End-->
     </footer>
 
   <!-- JS here -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
-        <script type="module" src="{{ url_for('static', filename='js/auth.js') }}"></script>
         <script type="module" src="{{ url_for('static',filename='js/firebaseConfig.js') }}"></script>
+        <script type="module" src="{{ url_for('static', filename='js/auth.js') }}"></script>
+        <script type="module" src="{{ url_for('static', filename='js/notifications.js') }}"></script>
         <script type="module" src="{{ url_for('static', filename='js/home_featured.js') }}"></script>
         <script src="https://kit.fontawesome.com/d3b4b6d594.js" crossorigin="anonymous"></script>
 		<!-- All JS Custom Plugins Link Here here -->

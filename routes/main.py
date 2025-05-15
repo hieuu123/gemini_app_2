@@ -57,6 +57,14 @@ def manage_applicants(job_id):
     return render_template("manage_applicants.html",
                            job_id=job_id,
                            job_title=job_title)
+    
+@main_bp.route("/all_jobs", methods=["GET"])
+def all_jobs():
+    """
+    Trang hiển thị tất cả các jobs đã tự đăng (jobs_self_posted).
+    JS phía client (all_jobs.js) sẽ fetch trực tiếp từ Firestore.
+    """
+    return render_template("all_jobs.html")
 
 @main_bp.route("/", methods=["GET"])
 def index():
@@ -116,11 +124,20 @@ def stream(search_id):
 
 @main_bp.route("/job/<job_id>")
 def job(job_id):
-    doc = db.collection("jobs").document(job_id).get()
-    if not doc.exists:
+    # 1. Thử trong scraped jobs
+    snap = db.collection("jobs").document(job_id).get()
+    source = "jobs"
+    # 2. Nếu không có, thử trong tự đăng
+    if not snap.exists:
+        snap = db.collection("jobs_self_posted").document(job_id).get()
+        source = "jobs_self_posted"
+    if not snap.exists:
         return jsonify({"error": "Not found"}), 404
-    data = doc.to_dict()
+
+    data = snap.to_dict()
     data["job_id"] = job_id
+    # đánh dấu đây có phải self_posted không
+    data["self_posted"] = (source == "jobs_self_posted")
     return jsonify(data)
 
 @main_bp.route("/send_message", methods=["POST"])

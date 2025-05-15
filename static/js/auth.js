@@ -79,26 +79,24 @@ onAuthStateChanged(auth, async user => {
     userDropdown.style.display = 'inline-block';
     userEmailEl.textContent    = user.email.toLowerCase();
 
-    // fetch profile để xem is_admin
     const snap = await getDoc(doc(db, "users", user.uid));
     const isAdmin = snap.exists() && snap.data().is_admin;
 
-    // show/hide các phần tử admin-only
-    adminItems.forEach(el => {
-      if (isAdmin) el.classList.remove('d-none');
-      else          el.classList.add   ('d-none');
+    // admin-only
+    document.querySelectorAll('.admin-only').forEach(el => {
+      el.classList.toggle('d-none', !isAdmin);
+    });
+    // user-only
+    document.querySelectorAll('.user-only').forEach(el => {
+      el.style.display = isAdmin ? 'none' : 'inline-block';
     });
 
-    // Show/hide user-only
-    document.querySelectorAll('.user-only')
-    .forEach(el => el.style.display = isAdmin ? 'none' : '');
   } else {
-    // khi logout
     authButtons.style.display  = 'inline-block';
     userDropdown.style.display = 'none';
     userEmailEl.textContent    = '';
 
-    // luôn ẩn admin-only
-    adminItems.forEach(el => el.classList.add('d-none'));
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
+    document.querySelectorAll('.user-only').forEach(el => el.style.display = 'none');
   }
 });

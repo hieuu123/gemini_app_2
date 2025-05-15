@@ -244,4 +244,23 @@
 #apply-btn {
     padding: 15px;
 }
+
+#notif-btn {
+    padding: 15px;
+    margin-left: 5px;
+}
+
+.user-only {
+    display: none;
+}
+
+#notif-dropdown {
+    margin-top: 15px;
+}
+
+#notif-count {
+    top: 2px;
+    right: 2px;
+
+}
   
