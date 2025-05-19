@@ -1,6 +1,6 @@
 # db/operations.py
 from api.firebase_config import db
-import state
+import api.state as state
 
 def save_job_to_db(job_details, keyword, send_job_callback=None):
     """

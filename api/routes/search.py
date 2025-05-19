@@ -2,7 +2,7 @@
 import threading, datetime, pytz, uuid
 from flask import Blueprint, request, jsonify
 import api.config as config
-import state
+import api.state as state
 from scraper.linkedin_search import get_job_ids, get_job_details
 from db.operations import save_job_to_db, get_existing_job_ids_from_db, delete_job_from_db
 
