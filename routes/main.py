@@ -33,7 +33,7 @@ def manage_jobs():
 def job_detail(job_id):
     """
     Trang chi tiết công việc tự đăng.
-    JS phía client (job_details2.js) sẽ đọc `window.location.pathname`
+    JS phía client (job_details.js) sẽ đọc `window.location.pathname`
     để lấy job_id và fetch dữ liệu từ Firestore.
     """
     return render_template('job_self_posted_details.html')
@@ -65,6 +65,10 @@ def all_jobs():
     JS phía client (all_jobs.js) sẽ fetch trực tiếp từ Firestore.
     """
     return render_template("all_jobs.html")
+
+@main_bp.route('/applicant_profile/<uid>')
+def applicant_profile(uid):
+    return render_template('applicant_profile.html', uid=uid)
 
 @main_bp.route("/", methods=["GET"])
 def index():

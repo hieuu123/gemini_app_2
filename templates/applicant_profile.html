@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Hồ sơ ứng viên</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/fontawesome-all.min.css') }}">
+  <style>
+    body { background: #f8f9fa; }
+    #loader {
+      position: fixed; top:0; left:0;
+      width:100%; height:100%;
+      display:flex; justify-content:center; align-items:center;
+      background:#fff; z-index:9999;
+    }
+    .profile-section { margin-bottom: 2rem; }
+    .job-card { cursor: pointer; margin-bottom:1rem; }
+    .job-card:hover { background: #f1f1f1; }
+  </style>
+</head>
+<body>
+  <div id="loader">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="container py-5" id="content" style="display:none;">
+    <h2 class="mb-4 text-center">Hồ sơ ứng viên</h2>
+    <div id="user-profile" class="profile-section">
+      <!-- JS sẽ đổ info user ở đây -->
+    </div>
+    <h4 class="mb-3">Các công việc đã ứng tuyển</h4>
+    <div id="applied-jobs-list" class="row gy-3">
+      <!-- JS sẽ đổ danh sách công việc ở đây -->
+    </div>
+  </div>
+
+  <script type="module" src="{{ url_for('static', filename='js/firebaseConfig.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/applicant_profile.js') }}"></script>
+</body>
+</html>
