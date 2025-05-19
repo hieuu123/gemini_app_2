@@ -1,0 +1,44 @@
+// rules_version = '2';
+
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /{document=**} {
+//       allow read, write: if false;
+//     }
+//   }
+// }
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Collection users: chỉ cần đăng nhập
+    match /users/{userId} {
+      allow read, write: if request.auth != null;
+    }
+    // Collection jobs: chỉ cần đăng nhập
+    match /jobs/{jobId} {
+      allow read, write: if request.auth != null;
+    }
+    // Collection jobs_self_posted: chỉ cần đăng nhập
+    match /jobs_self_posted/{jobId} {
+      allow read, write: if request.auth != null;
+    }
+    // Collection applicants_management: chỉ cần đăng nhập
+    match /applicants_management/{jobId} {
+      allow read, write: if request.auth != null;
+    }
+		// notifications: admin tạo, user đọc/mark-read
+    match /notifications/{userId}/items/{notifId} {
+      // tạo mới (create) nếu người viết là admin
+      allow create: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true;
+      // đọc, update, delete chỉ cho chính chủ notification
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == userId;
+    }
+    // Các đường dẫn khác: chặn
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
