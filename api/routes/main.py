@@ -5,7 +5,7 @@ import markdown2
 import config
 # from db.connection import connect_db
 import state  # import module state
-from firebase_config import db
+from api.firebase_config import db
 
 main_bp = Blueprint("main", __name__)
 

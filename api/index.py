@@ -1,9 +1,9 @@
 import os
 from flask import Flask, send_from_directory
-from routes.search import search_bp
-from routes.main   import main_bp
+from api.routes.search import search_bp
+from api.routes.main   import main_bp
 # …
-from .firebase_config import db        # <-- import tương đối
+from api.firebase_config import db        # <-- import tương đối
 
 app = Flask(__name__, static_folder="../static", static_url_path="/")
 app.register_blueprint(main_bp)

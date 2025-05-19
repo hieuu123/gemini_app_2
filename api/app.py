@@ -5,12 +5,12 @@ import json
 import google.generativeai as genai
 import config
 # from db.connection import connect_db
-from firebase_config import db
+from api.firebase_config import db
 
 # from state import chat_sessions, current_chat_index
 import state
-from routes.main import main_bp
-from routes.search import search_bp
+from api.routes.main import main_bp
+from api.routes.search import search_bp
 
 app = Flask(__name__)
 
