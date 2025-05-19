@@ -1,0 +1,11 @@
+Flask
+python-dotenv
+requests
+beautifulsoup4
+pymysql
+pytz
+google-generativeai
+markdown2
+psycopg2-binary
+firebase-admin
+google-cloud-firestore
