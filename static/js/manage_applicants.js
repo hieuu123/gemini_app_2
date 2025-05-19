@@ -59,7 +59,7 @@ async function loadApplicants() {
       col.className = "col-md-6 applicant-card";
       col.innerHTML = `
         <div class="card p-3">
-          <h5>${u.name || "–"}</h5>
+          <h5><a href="/applicant_profile/${uid}" target="_blank" style="color:black;">${u.name || "–"}</a></h5>
           <p class="mb-1"><strong>Email:</strong> ${u.email}</p>
           <p class="mb-1"><strong>Phone:</strong> ${u.phone || "–"}</p>
           <div class="mt-3">
