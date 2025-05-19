@@ -3,7 +3,7 @@ from flask import Flask
 import datetime
 import json
 import google.generativeai as genai
-import config
+import api.config as config
 # from db.connection import connect_db
 from api.firebase_config import db
 
