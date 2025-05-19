@@ -2,7 +2,7 @@
 import os, time, json
 from flask import Blueprint, render_template, send_file, Response, jsonify, request
 import markdown2
-import config
+import api.config as config
 # from db.connection import connect_db
 import state  # import module state
 from api.firebase_config import db

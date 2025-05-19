@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from requests.exceptions import RequestException
 import re
-import config
+import api.config as config
 
 
 def get_job_ids(keyword):
