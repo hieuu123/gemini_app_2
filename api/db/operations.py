@@ -1,5 +1,5 @@
 # db/operations.py
-from firebase_config import db
+from api.firebase_config import db
 import state
 
 def save_job_to_db(job_details, keyword, send_job_callback=None):
