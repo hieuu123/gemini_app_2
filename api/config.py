@@ -1,11 +1,7 @@
-import os
-from dotenv import load_dotenv
+import os, json
 
-# Load các biến môi trường từ .env
-load_dotenv()
-
-FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
-FIREBASE_PROJECT_ID     = os.getenv("FIREBASE_PROJECT_ID")
+FIREBASE_SA_JSON    = os.environ.get("FIREBASE_SA_JSON")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
 
 # === Database configuration ===
 DB_HOST     = os.getenv("DB_HOST", "localhost")
