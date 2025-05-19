@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, send_file, Response, jsonify, requ
 import markdown2
 import api.config as config
 # from db.connection import connect_db
-import state  # import module state
+import api.state as state  # import module state
 from api.firebase_config import db
 
 main_bp = Blueprint("main", __name__)

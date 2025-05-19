@@ -8,7 +8,7 @@ import api.config as config
 from api.firebase_config import db
 
 # from state import chat_sessions, current_chat_index
-import state
+import api.state as state
 from api.routes.main import main_bp
 from api.routes.search import search_bp
 
