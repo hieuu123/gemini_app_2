@@ -5,7 +5,7 @@ import api.config as config
 import api.state as state
 from api.scraper.linkedin_search import get_job_ids, get_job_details
 from api.db.operations import save_job_to_db, get_existing_job_ids_from_db, delete_job_from_db
-from api.chat_utils import export_jobs_to_store, continue_chat_session
+from api.chat_utils import export_jobs_to_store, continue_chat_session, export_and_update_chat
 
 search_bp = Blueprint("search", __name__)
 
@@ -28,6 +28,8 @@ def search():
         state.job_messages.clear()
         state.retry_count = 0
         state.displayed_job_ids.clear()
+        
+        export_and_update_chat()
 
         # khởi chat + initial knowledge
         # from api.chat_utils import export_jobs_to_file, continue_chat_session
