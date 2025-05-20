@@ -266,7 +266,7 @@
             input.value = '';
             showThinking();
 
-            fetch('/send_message', {
+            fetch('/api/send_message', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -275,8 +275,10 @@
             })
             .then(response => response.json())
             .then(data => {
-                hideThinking();
-                appendMessage('Chatbot', data.response);
+                // hideThinking();
+                // appendMessage('Chatbot', data.response);
+                const msg = data.response ?? data.error ?? 'Rất tiếc, có lỗi xảy ra.';
+                appendMessage('Chatbot', msg);
             })
             .catch(error => {
                 hideThinking();
