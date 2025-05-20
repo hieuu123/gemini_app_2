@@ -14,8 +14,8 @@ app = Flask(
   static_folder=os.path.join(ROOT, "static"),
   static_url_path="/"
 )
-app.register_blueprint(main_bp, url_prefix="/api")
-app.register_blueprint(search_bp, url_prefix="/api")
+app.register_blueprint(main_bp)
+app.register_blueprint(search_bp)
 # …
 
 @app.route("/", defaults={"path": ""}, methods=["GET"])
