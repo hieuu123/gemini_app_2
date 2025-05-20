@@ -197,39 +197,45 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-let chatStarted = false;
 let chatHistory = [];
+let greeted     = false;
 
-function startNewChat() {
-  // không gọi greeting nếu đã start rồi
-  if (chatStarted) {
-    chatHistory = [];  // chỉ reset history, nhưng không append system message
-    return;
+function startChat() {
+  // reset khi search mới
+  chatHistory = [];
+  if (!greeted) {
+    const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job…";
+    chatHistory.push({ role: "system", parts: greeting });
+    appendMessage("Chatbot", greeting);
+    greeted = true;
   }
-  // lần đầu tiên mới append greeting
-  const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type, working hours, location, and benefits.";
-  chatHistory = [{ role: "system", parts: greeting }];
-  appendMessage("Chatbot", greeting);
-  chatStarted = true;
 }
 
-document.getElementById("job-form").addEventListener("submit", async e => {
+form.addEventListener("submit", async e => {
   e.preventDefault();
-  // reset UI...
-  startNewChat();
-  // rồi mới gọi /search và SSE tiếp tục như cũ
-});
+  // 1) reset UI, dọn SSE…
+  cleanupSearch();
+  jobListElem.innerHTML = "";
+  jobDetailsElem.innerHTML = "";
+  logElem.innerHTML    = "";
 
+  // 2) reset chatHistory và show greeting
+  startChat();
+
+  // 3) gọi /search như bình thường để get job kết quả…
+  //    (EventSource, hiển thị job list, v.v.)
+});
 async function sendMessage() {
   const input = document.getElementById("input");
-  const msg = input.value.trim();
+  const msg   = input.value.trim();
   if (!msg) return;
+
+  // 1) Hiển thị và append user
   appendMessage("You", msg);
-  showThinking();
-
-  // đẩy user message vào history
   chatHistory.push({ role: "user", parts: msg });
+  input.value = "";
 
+  // 2) Gọi API
   const res = await fetch("/send_message", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -239,9 +245,9 @@ async function sendMessage() {
     })
   });
   const data = await res.json();
-  hideThinking();
-  appendMessage("Chatbot", data.response);
 
-  // cập nhật lại history với assistant reply
+  // 3) Hiện reply và cập nhật lại history
+  appendMessage("Chatbot", data.response);
   chatHistory = data.history;
 }
+
