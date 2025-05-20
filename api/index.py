@@ -18,7 +18,7 @@ app.register_blueprint(main_bp)
 app.register_blueprint(search_bp)
 # …
 
-# @app.route("/", defaults={"path": ""})
+@app.route("/", defaults={"path": ""})
 # chỉ 1 route, cho tất cả đường dẫn có dấu “.” hoặc folder
 @app.route("/<path:path>")
 def static_proxy(path):
