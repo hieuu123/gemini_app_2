@@ -18,14 +18,14 @@ def export_jobs_to_file(keyword):
     jobs = []
     # scraped …
     for doc in db.collection("jobs") \
-                 .where(filter="keyword", op_string="==", value=keyword.lower()) \
+                 .where(field_path="keyword", op_string="==", value=keyword.lower()) \
                  .stream():
         data = doc.to_dict()
         data["job_id"] = doc.id
         jobs.append(data)
     # self-posted …
     for doc in db.collection("jobs_self_posted") \
-                 .where(filter="keyword", op_string="==", value=keyword.lower()) \
+                 .where(field_path="keyword", op_string="==", value=keyword.lower()) \
                  .stream():
         data = doc.to_dict()
         data["job_id"] = doc.id
