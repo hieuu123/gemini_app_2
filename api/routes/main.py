@@ -159,20 +159,24 @@ def job(job_id):
 
 @main_bp.route("/send_message", methods=["POST"])
 def send_message():
-    payload = request.get_json()
-    history = payload.get("history", [])
-    user_input = payload.get("message", "")
-    # append user message
+    data       = request.get_json()
+    history    = data.get("history", [])   # mảng chat history đầy đủ
+    user_input = data.get("message", "")
+
+    # 1) Append tin nhắn user vào history
     history.append({"role": "user", "parts": user_input})
 
-    # gọi Gemini với full history
-    chat = model.start_chat(history=history)
+    # 2) Khởi 1 chat mới với full history
+    chat     = model.start_chat(history=history)
     response = chat.send_message([])
+
+    # 3) Lấy text và append lại vào history
     text = response.text or ""
     history.append({"role": "model", "parts": text})
 
+    # 4) Trả về cả response và history mới
     return jsonify({
         "response": markdown2.markdown(text),
-        "history": history
+        "history":  history
     })
 
