@@ -2,8 +2,9 @@
 import os, json, datetime
 import google.generativeai as genai
 from flask import current_app
-from google.cloud import firestore
+from google.cloud.firestore_v1 import FieldFilter
 from . import config, state  # giả sử bạn đã có config và state dưới api/
+from google.cloud import firestore
 
 # Khởi Gemini (thực ra chỉ cần làm 1 lần khi app khởi)
 genai.configure(api_key=config.API_KEY)
@@ -41,14 +42,14 @@ def export_jobs_to_store(keyword):
     jobs = []
     # scraped …
     for doc in db.collection("jobs") \
-                 .where("keyword", "==", keyword.lower()) \
+                 .where(filter=FieldFilter("keyword", "==", keyword.lower())) \
                  .stream():
         data = doc.to_dict()
         data["job_id"] = doc.id
         jobs.append(data)
     # self-posted …
     for doc in db.collection("jobs_self_posted") \
-                 .where("keyword", "==", keyword.lower()) \
+                 .where(filter=FieldFilter("keyword", "==", keyword.lower())) \
                  .stream():
         data = doc.to_dict()
         data["job_id"] = doc.id
