@@ -150,7 +150,8 @@ def send_message():
     user_input = data.get("message", "")
     session_name = f"chat{state.current_chat_index - 1}"
     if session_name not in state.chat_sessions:
-        return jsonify({"error": "Chat session not found."}), 404
+        # return jsonify({"error": "Chat session not found."}), 404
+        return jsonify({"response": "Chat session không tìm thấy, vui lòng search lại để khởi session mới."})
     response = state.chat_sessions[session_name].send_message([user_input])
     html = markdown2.markdown(response.text)
     return jsonify({"response": html})
