@@ -19,8 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const snapshot = await getDocs(collection(db, "jobs_self_posted"));
       snapshot.forEach(docSnap => {
         const job = docSnap.data();
-        const id  = docSnap.id;
-  
+        const id = docSnap.id;
+
         // nếu job.keyword không tồn tại hoặc không chứa searchKeyword thì bỏ qua
         if (
           !job.keyword ||
@@ -28,10 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
         ) {
           return;
         }
-  
+
         // tạo phần tử giống như onEventMessage
         const jobItem = document.createElement("div");
-        jobItem.className   = "job-item";
+        jobItem.className = "job-item";
         jobItem.dataset.jobId = id;
         jobItem.innerHTML = `
           <strong>${job.title}</strong><br>
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
           fetchJobDetails(id);
           selectJobItem(jobItem);
         };
-  
+
         jobListElem.appendChild(jobItem);
         currentJob++;  // đánh số tiếp theo cho scraped
       });
@@ -177,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       })
       .catch(console.error);
-  }  
+  }
 
   function selectJobItem(item) {
     document.querySelectorAll(".job-item").forEach((el) => el.classList.remove("selected"));
@@ -196,3 +196,52 @@ document.addEventListener('DOMContentLoaded', function () {
     link.setAttribute('target', '_blank');
   });
 });
+
+let chatStarted = false;
+let chatHistory = [];
+
+function startNewChat() {
+  // không gọi greeting nếu đã start rồi
+  if (chatStarted) {
+    chatHistory = [];  // chỉ reset history, nhưng không append system message
+    return;
+  }
+  // lần đầu tiên mới append greeting
+  const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type, working hours, location, and benefits.";
+  chatHistory = [{ role: "system", parts: greeting }];
+  appendMessage("Chatbot", greeting);
+  chatStarted = true;
+}
+
+document.getElementById("job-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  // reset UI...
+  startNewChat();
+  // rồi mới gọi /search và SSE tiếp tục như cũ
+});
+
+async function sendMessage() {
+  const input = document.getElementById("input");
+  const msg = input.value.trim();
+  if (!msg) return;
+  appendMessage("You", msg);
+  showThinking();
+
+  // đẩy user message vào history
+  chatHistory.push({ role: "user", parts: msg });
+
+  const res = await fetch("/send_message", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: msg,
+      history: chatHistory
+    })
+  });
+  const data = await res.json();
+  hideThinking();
+  appendMessage("Chatbot", data.response);
+
+  // cập nhật lại history với assistant reply
+  chatHistory = data.history;
+}

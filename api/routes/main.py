@@ -6,6 +6,7 @@ import api.config as config
 # from db.connection import connect_db
 import api.state as state  # import module state
 from api.firebase_config import db
+from api.chat_utils import model
 
 main_bp = Blueprint("main", __name__)
 
@@ -144,14 +145,34 @@ def job(job_id):
     data["self_posted"] = (source == "jobs_self_posted")
     return jsonify(data)
 
+# @main_bp.route("/send_message", methods=["POST"])
+# def send_message():
+#     data = request.get_json()
+#     user_input = data.get("message", "")
+#     session_name = f"chat{state.current_chat_index - 1}"
+#     if session_name not in state.chat_sessions:
+#         # return jsonify({"error": "Chat session not found."}), 404
+#         return jsonify({"response": "Chat session không tìm thấy, vui lòng search lại để khởi session mới."})
+#     response = state.chat_sessions[session_name].send_message([user_input])
+#     html = markdown2.markdown(response.text)
+#     return jsonify({"response": html})
+
 @main_bp.route("/send_message", methods=["POST"])
 def send_message():
-    data = request.get_json()
-    user_input = data.get("message", "")
-    session_name = f"chat{state.current_chat_index - 1}"
-    if session_name not in state.chat_sessions:
-        # return jsonify({"error": "Chat session not found."}), 404
-        return jsonify({"response": "Chat session không tìm thấy, vui lòng search lại để khởi session mới."})
-    response = state.chat_sessions[session_name].send_message([user_input])
-    html = markdown2.markdown(response.text)
-    return jsonify({"response": html})
+    payload = request.get_json()
+    history = payload.get("history", [])
+    user_input = payload.get("message", "")
+    # append user message
+    history.append({"role": "user", "parts": user_input})
+
+    # gọi Gemini với full history
+    chat = model.start_chat(history=history)
+    response = chat.send_message([])
+    text = response.text or ""
+    history.append({"role": "model", "parts": text})
+
+    return jsonify({
+        "response": markdown2.markdown(text),
+        "history": history
+    })
+
