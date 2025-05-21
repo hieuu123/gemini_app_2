@@ -258,11 +258,6 @@
         }
 
         function sendMessage() {
-            const chatboxContainer = document.getElementById("chatbox-container");
-            const inputEl = document.getElementById("input");
-            let chatHistory = [];          // toàn bộ lịch sử chat
-            let currentKeyword = "";          // lưu keyword hiện tại    
-
             const message = inputEl.value.trim();
             if (!message) return;
           
