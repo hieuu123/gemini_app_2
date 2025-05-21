@@ -6,6 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentJob = 0;
   let currentChatIndex = 0;
   let currentSearchId = null;
+  let chatHistory = [];          // toàn bộ lịch sử chat
+  let greeted = false;       // flag đã gửi greeting chưa
+  let currentKeyword = "";          // lưu keyword hiện tại
 
   const form = document.getElementById("job-form");
   const logElem = document.getElementById("log");
@@ -65,10 +68,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Mở chat lần đầu với greeting
+  function openChat() {
+    if (!greeted) {
+      const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type, working hours, location, and benefits.";
+      appendMessage("Chatbot", greeting);
+      // Đưa greeting này vào history như một hệ thống message
+      chatHistory.push({ role: "system", parts: greeting });
+      greeted = true;
+    }
+  }
+
   // Đảm bảo gọi cleanup khi reload / back / navigate away
-  window.addEventListener("beforeunload", cleanupSearch);
-  window.addEventListener("pagehide", cleanupSearch);
-  window.addEventListener("unload", cleanupSearch);
+  // window.addEventListener("beforeunload", cleanupSearch);
+  // window.addEventListener("pagehide", cleanupSearch);
+  // window.addEventListener("unload", cleanupSearch);
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -82,42 +96,30 @@ document.addEventListener("DOMContentLoaded", () => {
     jobDetailsElem.innerHTML = "";
     currentJob = 0;
 
-    // Load trước các job tự đăng
-    await loadSelfPostedJobs(keyword);
+    // 2) reset chat state
+    currentKeyword = keyword;
+    chatHistory = [];
+    greeted = false;
 
-    // 2) Mở chatbot nếu cần
-    if (!chatboxContainer.style.display || chatboxContainer.style.display === "none") {
+    // 3) load self-posted và mở chat + greeting
+    await loadSelfPostedJobs(keyword);
+    if (chatboxContainer.style.display === "" || chatboxContainer.style.display === "none") {
       toggleChatbox();
     }
-    appendMessage("Chatbot", '<i id="processing-message">Processing your request...</i><br><br>');
+    openChat();  // chỉ chạy 1 lần đầu
 
-    // 3) Gọi /search lấy search_id
-    const res = await fetch("/search", {
+    // 4) gọi /search SSE
+    const res1 = await fetch("/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ keyword }),
     });
-    const { search_id } = await res.json();
+    const { search_id } = await res1.json();
     currentSearchId = search_id;
 
-    // 4) Tạo EventSource mới trỏ đến đúng phiên search
     eventSource = new EventSource(`/stream/${encodeURIComponent(search_id)}`);
     eventSource.onmessage = onEventMessage;
-    eventSource.onerror = (err) => {
-      console.error("SSE error:", err);
-      cleanupSearch();
-    };
-
-    // 5) Lời chào lần đầu
-    if (currentChatIndex === 0) {
-      setTimeout(() => {
-        appendMessage(
-          "Chatbot",
-          "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type (full-time, part-time, freelance), working hours, location, and benefits. The more details you provide, the better I can help you find the right match!<br><br>"
-        );
-      }, 1000);
-    }
-    currentChatIndex++;
+    eventSource.onerror = () => { cleanupSearch(); };
   });
 
   function onEventMessage(event) {
@@ -190,64 +192,52 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-document.addEventListener('DOMContentLoaded', function () {
-  const links = document.querySelectorAll('#chatbox a');
-  links.forEach(link => {
-    link.setAttribute('target', '_blank');
-  });
-});
-
-let chatHistory = [];
-let greeted     = false;
-
-function startChat() {
-  // reset khi search mới
-  chatHistory = [];
-  if (!greeted) {
-    const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job…";
-    chatHistory.push({ role: "system", parts: greeting });
-    appendMessage("Chatbot", greeting);
-    greeted = true;
-  }
-}
-
-form.addEventListener("submit", async e => {
-  e.preventDefault();
-  // 1) reset UI, dọn SSE…
-  cleanupSearch();
-  jobListElem.innerHTML = "";
-  jobDetailsElem.innerHTML = "";
-  logElem.innerHTML    = "";
-
-  // 2) reset chatHistory và show greeting
-  startChat();
-
-  // 3) gọi /search như bình thường để get job kết quả…
-  //    (EventSource, hiển thị job list, v.v.)
-});
+// Hàm gửi message lên server
 async function sendMessage() {
   const input = document.getElementById("input");
-  const msg   = input.value.trim();
+  const msg = input.value.trim();
   if (!msg) return;
 
-  // 1) Hiển thị và append user
+  // 1) Hiển thị user lên UI và push vào history
   appendMessage("You", msg);
   chatHistory.push({ role: "user", parts: msg });
   input.value = "";
 
-  // 2) Gọi API
+  // 2) Gọi API, kèm keyword và toàn bộ history
   const res = await fetch("/send_message", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      message: msg,
-      history: chatHistory
+      keyword: currentKeyword,    // quan trọng để server load knowledge
+      history: chatHistory,
+      message: msg
     })
   });
   const data = await res.json();
 
-  // 3) Hiện reply và cập nhật lại history
+  // 3) Hiển thị phản hồi và cập nhật history
   appendMessage("Chatbot", data.response);
   chatHistory = data.history;
 }
+
+// expose sendMessage cho button & Enter
+window.sendMessage = sendMessage;
+
+// helper để vẽ message
+function appendMessage(sender, message) {
+  const chatbox = document.getElementById('chatbox');
+  const msgDiv = document.createElement('div');
+  msgDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+  chatbox.appendChild(msgDiv);
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+// helper toggle chatbox
+window.toggleChatbox = () => {
+  if (chatboxContainer.style.display === 'none' || chatboxContainer.style.display === '') {
+    chatboxContainer.style.display = 'flex';
+  } else {
+    chatboxContainer.style.display = 'none';
+  }
+};
 
