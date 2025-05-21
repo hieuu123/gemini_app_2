@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentChatIndex === 0) {
       const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type (full-time, part-time, freelance), working hours, location, and benefits.";
       appendMessage("Chatbot", greeting);
-      chatHistory.push({ role: "system", parts: greeting });
+      window.chatHistory.push({ role: "system", parts: greeting });
     }
     currentChatIndex++;
 
