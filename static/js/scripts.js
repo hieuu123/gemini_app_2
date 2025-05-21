@@ -82,6 +82,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const keyword = form.querySelector('input[name="keyword"]').value.trim();
     if (!keyword) return;
 
+    window.currentKeyword = keyword;
+
     // 1) Dọn UI cũ và hủy SSE cũ
     cleanupSearch();
     logElem.innerHTML = "";
@@ -232,11 +234,14 @@ window.sendMessage = function () {
   // 2) hiệu ứng thinking
   showThinking();
 
-  // 3) POST lên server (chỉ cần gửi message)
+  // 3) POST lên server
   fetch("/send_message", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message })
+    body: JSON.stringify({ 
+      message,
+      keyword: window.currentKeyword 
+    })
   })
     .then(res => res.json())
     .then(data => {
