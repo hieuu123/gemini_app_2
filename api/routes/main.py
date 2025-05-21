@@ -160,45 +160,34 @@ def job(job_id):
 
 @main_bp.route("/send_message", methods=["POST"])
 def send_message():
-    # 1) Đọc JSON payload thật chặt
     try:
-        payload = request.get_json(force=True)
-    except Exception as e:
-        current_app.logger.error(f"/send_message: invalid JSON: {e}")
-        return jsonify({"error": "Invalid JSON"}), 400
+        data       = request.get_json(force=True)
+        user_input = (data.get("message") or "").strip()
+        # Tên session chat cuối cùng
+        session_name = f"chat{state.current_chat_index - 1}"
 
-    # 2) Lấy message, history, keyword với mặc định an toàn
-    user_input = (payload.get("message") or "").strip()
-    history    = payload.get("history") or []
-    keyword    = (payload.get("keyword") or "").strip()
+        # 1) Kiểm tra session đã được tạo chưa
+        if session_name not in state.chat_sessions:
+            return jsonify({
+                "error": "Phiên chat không tìm thấy, vui lòng thực hiện tìm kiếm mới."
+            }), 400
 
-    if not user_input:
-        return jsonify({"error": "Empty message"}), 400
+        chat = state.chat_sessions[session_name]
 
-    try:
-        # 3) Chèn knowledge lên đầu history nếu có
-        jobs = read_knowledge_from_store(keyword)
-        if jobs:
-            history.insert(0, {
-                "role": "user",
-                "parts": "Current job listings:\n" + json.dumps(jobs, ensure_ascii=False)
-            })
-
-        # 4) Append user và tạo phiên chat mới
-        history.append({"role": "user", "parts": user_input})
-        chat     = model.start_chat(history=history)
+        # 2) Gửi user message (chỉ truyền nội dung user, không include system)
         response = chat.send_message([user_input])
 
-        # 5) Lấy text, append vào history, trả về client
+        # 3) Lấy kết quả
         text = response.text or ""
-        history.append({"role": "model", "parts": text})
         return jsonify({
-            "response": markdown2.markdown(text),
-            "history":  history
+            "response": markdown2.markdown(text)
         })
-    except Exception as e:
-        # 6) Log stacktrace thật chi tiết, trả JSON lỗi
+    except Exception:
         current_app.logger.error("Error in /send_message:\n" + traceback.format_exc())
-        return jsonify({"error": "Internal server error, please try again."}), 500
+        return jsonify({
+            "error": "Internal server error, xin thử lại."
+        }), 500
+
+
 
 
