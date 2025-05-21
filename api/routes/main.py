@@ -162,25 +162,24 @@ def send_message():
     payload    = request.get_json()
     history    = payload.get("history", [])
     user_input = payload.get("message", "").strip()
-    keyword    = payload.get("keyword", None)   # client cũng cần gửi
+    keyword    = payload.get("keyword", "")
 
-    # 1) load knowledge từ Firestore
-    knowledge_jobs = read_knowledge_from_store(keyword or "")
-    if knowledge_jobs:
-        # chèn hẳn vào đầu history
+    # chèn knowledge vào đầu history
+    jobs = read_knowledge_from_store(keyword)
+    if jobs:
         history.insert(0, {
             "role": "system",
-            "parts": "Here are the current job listings:\n" + json.dumps(knowledge_jobs, ensure_ascii=False)
+            "parts": "Current job listings:\n" + json.dumps(jobs, ensure_ascii=False)
         })
 
-    # 2) append user
+    # append user
     history.append({"role": "user", "parts": user_input})
 
-    # 3) start chat & gửi
+    # start chat & send
     chat     = model.start_chat(history=history)
     response = chat.send_message([user_input])
 
-    # 4) append bot trả lời
+    # lấy text & append
     text = response.text or ""
     history.append({"role": "model", "parts": text})
 
