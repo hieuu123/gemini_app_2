@@ -134,7 +134,7 @@
         </form>
     </div>
 
-    <div id="log-container" style="display:none;">
+    <div id="log-container">
         <div id="log" style="overflow-y: auto;"></div>
     </div>
 
@@ -276,8 +276,8 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 message: message,
-                history: chatHistory,
-                keyword: currentKeyword
+                history: window.chatHistory,
+                keyword: window.currentKeyword
               })
             })
             .then(res => res.json())

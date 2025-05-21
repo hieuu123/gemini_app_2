@@ -90,8 +90,8 @@ document.addEventListener("DOMContentLoaded", () => {
     currentJob = 0;
 
     // 2) lưu keyword, reset lịch sử chat
-    currentKeyword = keyword;
-    chatHistory = [];
+    window.currentKeyword = keyword;
+    window.chatHistory = [];
     currentChatIndex = 0;
 
     // Load trước các job tự đăng
