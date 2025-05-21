@@ -204,8 +204,6 @@
     <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
     
     <script>
-        const chatboxContainer = document.getElementById("chatbox-container");
-        const inputEl = document.getElementById("input");
         function toggleChatbox() {
             const chatboxContainer = document.getElementById('chatbox-container');
             const chatboxToggle = document.getElementById('chatbox-toggle');
@@ -260,6 +258,11 @@
         }
 
         function sendMessage() {
+            const chatboxContainer = document.getElementById("chatbox-container");
+            const inputEl = document.getElementById("input");
+            let chatHistory = [];          // toàn bộ lịch sử chat
+            let currentKeyword = "";          // lưu keyword hiện tại    
+
             const message = inputEl.value.trim();
             if (!message) return;
           
