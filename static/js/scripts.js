@@ -3,10 +3,10 @@
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 import { db } from "./firebaseConfig.js"; // đảm bảo bạn đã có
 
-const chatboxContainer = document.getElementById("chatbox-container");
-const inputEl = document.getElementById("input");
-let chatHistory = [];          // toàn bộ lịch sử chat
-let currentKeyword = "";          // lưu keyword hiện tại
+// const chatboxContainer = document.getElementById("chatbox-container");
+// const inputEl = document.getElementById("input");
+window.chatHistory = [];          // toàn bộ lịch sử chat
+window.currentKeyword = "";          // lưu keyword hiện tại
 
 document.addEventListener("DOMContentLoaded", () => {
   let eventSource = null;
