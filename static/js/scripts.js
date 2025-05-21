@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const jobListElem = document.getElementById("job-list");
   const jobDetailsElem = document.getElementById("job-details");
   const chatboxContainer = document.getElementById("chatbox-container");
-  const toggleLogBtn = document.getElementById("toggle-log");
+  const toggleLogBtn = document.getElementById("log-container");
 
   async function loadSelfPostedJobs(searchKeyword) {
     try {
