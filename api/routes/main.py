@@ -6,7 +6,7 @@ import api.config as config
 # from db.connection import connect_db
 import api.state as state  # import module state
 from api.firebase_config import db
-from api.chat_utils import model
+from api.chat_utils import model, read_knowledge_from_store
 
 main_bp = Blueprint("main", __name__)
 
@@ -159,25 +159,33 @@ def job(job_id):
 
 @main_bp.route("/send_message", methods=["POST"])
 def send_message():
-    data       = request.get_json()
-    history    = data.get("history", [])   # chat history cũ
-    user_input = data.get("message", "").strip()
+    payload    = request.get_json()
+    history    = payload.get("history", [])
+    user_input = payload.get("message", "").strip()
+    keyword    = payload.get("keyword", None)   # client cũng cần gửi
 
-    # 1) Khởi chat mới với context từ history
-    chat = model.start_chat(history=history)
+    # 1) load knowledge từ Firestore
+    knowledge_jobs = read_knowledge_from_store(keyword or "")
+    if knowledge_jobs:
+        # chèn hẳn vào đầu history
+        history.insert(0, {
+            "role": "system",
+            "parts": "Here are the current job listings:\n" + json.dumps(knowledge_jobs, ensure_ascii=False)
+        })
 
-    # 2) Gửi user_input vào Gemini
+    # 2) append user
+    history.append({"role": "user", "parts": user_input})
+
+    # 3) start chat & gửi
+    chat     = model.start_chat(history=history)
     response = chat.send_message([user_input])
 
-    # 3) Lấy text trả về
+    # 4) append bot trả lời
     text = response.text or ""
-
-    # 4) Cập nhật lại history: thêm user và assistant vào
-    history.append({"role": "user",   "parts": user_input})
-    history.append({"role": "model",  "parts": text})
+    history.append({"role": "model", "parts": text})
 
     return jsonify({
-        "response": markdown2.markdown(text),
-        "history":  history
+      "response": markdown2.markdown(text),
+      "history":  history
     })
 
