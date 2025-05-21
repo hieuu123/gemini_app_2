@@ -132,16 +132,16 @@ def continue_chat_session(keyword):
     jobs = read_knowledge_from_store(keyword)
     knowledge_parts = json.dumps(jobs, ensure_ascii=False)
 
-    state.chat_sessions[chat_name] = model.start_chat(
-        history=history + [
-            {"role":"model","parts":"knowledge:"},
-            {"role":"model","parts": knowledge_parts},
-        ]
-    )
+    # state.chat_sessions[chat_name] = model.start_chat(
+    #     history=history + [
+    #         {"role":"model","parts":"knowledge:"},
+    #         {"role":"model","parts": knowledge_parts},
+    #     ]
+    # )
     
-    # chat = state.chat_sessions[chat_name]
-    # # Gửi knowledge như một user message, không dùng role system
-    # chat.send_message([f"Current job listings:\n{knowledge_parts}"])
+    chat = state.chat_sessions[chat_name]
+    # Gửi knowledge như một user message, không dùng role system
+    chat.send_message([f"Current job listings:\n{knowledge_parts}"])
 
 
         
