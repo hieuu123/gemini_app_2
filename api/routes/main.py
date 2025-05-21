@@ -1,12 +1,13 @@
 # routes/main.py
 import os, time, json
-from flask import Blueprint, render_template, send_file, Response, jsonify, request
+from flask import Blueprint, render_template, send_file, Response, jsonify, request, current_app
 import markdown2
 import api.config as config
 # from db.connection import connect_db
 import api.state as state  # import module state
 from api.firebase_config import db
 from api.chat_utils import model, read_knowledge_from_store
+import traceback
 
 main_bp = Blueprint("main", __name__)
 
@@ -159,32 +160,38 @@ def job(job_id):
 
 @main_bp.route("/send_message", methods=["POST"])
 def send_message():
-    payload    = request.get_json()
-    history    = payload.get("history", [])
-    user_input = payload.get("message", "").strip()
-    keyword    = payload.get("keyword", "")
+    try:
+        payload    = request.get_json()
+        history    = payload.get("history", [])
+        user_input = payload.get("message", "").strip()
+        keyword    = payload.get("keyword", "")
 
-    # chèn knowledge vào đầu history
-    jobs = read_knowledge_from_store(keyword)
-    if jobs:
-        history.insert(0, {
-            "role": "system",
-            "parts": "Current job listings:\n" + json.dumps(jobs, ensure_ascii=False)
+        # chèn knowledge vào đầu history
+        jobs = read_knowledge_from_store(keyword)
+        if jobs:
+            history.insert(0, {
+                "role": "system",
+                "parts": "Current job listings:\n" + json.dumps(jobs, ensure_ascii=False)
+            })
+
+        # append user
+        history.append({"role": "user", "parts": user_input})
+
+        # start chat & send
+        chat     = model.start_chat(history=history)
+        response = chat.send_message([user_input])
+
+        # lấy text & append
+        text = response.text or ""
+        history.append({"role": "model", "parts": text})
+
+        return jsonify({
+            "response": markdown2.markdown(text),
+            "history":  history
         })
-
-    # append user
-    history.append({"role": "user", "parts": user_input})
-
-    # start chat & send
-    chat     = model.start_chat(history=history)
-    response = chat.send_message([user_input])
-
-    # lấy text & append
-    text = response.text or ""
-    history.append({"role": "model", "parts": text})
-
-    return jsonify({
-      "response": markdown2.markdown(text),
-      "history":  history
-    })
+    except Exception:
+        # log full traceback vào console/log của Flask
+        current_app.logger.error("Error in /send_message:\n" + traceback.format_exc())
+        # trả về JSON lỗi để client không bị crash khi gọi res.json()
+        return jsonify({"error": "Internal server error, please try again."}), 500
 
