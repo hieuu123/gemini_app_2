@@ -1,179 +1,107 @@
-// scripts.js
-
+// static/js/scripts.js
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-import { db } from "./firebaseConfig.js"; // đảm bảo bạn đã có
+import { db } from "./firebaseConfig.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  let eventSource = null;
-  let currentJob = 0;
-  let currentChatIndex = 0;
+(() => {
+  // —— Module‐scope state —— 
+  let eventSource     = null;
+  let currentJob      = 0;
   let currentSearchId = null;
+  let chatHistory     = [];
+  let greeted         = false;
+  let currentKeyword  = "";
 
-  const form = document.getElementById("job-form");
-  const logElem = document.getElementById("log");
-  const jobListElem = document.getElementById("job-list");
-  const jobDetailsElem = document.getElementById("job-details");
+  // —— DOM refs —— 
+  const form             = document.getElementById("job-form");
+  const logElem          = document.getElementById("log");
+  const jobListElem      = document.getElementById("job-list");
+  const jobDetailsElem   = document.getElementById("job-details");
   const chatboxContainer = document.getElementById("chatbox-container");
-  const toggleLogBtn = document.getElementById("toggle-log");
+  const chatboxToggleBtn = document.getElementById("chatbox-toggle");
+  const inputEl          = document.getElementById("input");
 
-  async function loadSelfPostedJobs(searchKeyword) {
-    try {
-      const snapshot = await getDocs(collection(db, "jobs_self_posted"));
-      snapshot.forEach(docSnap => {
-        const job = docSnap.data();
-        const id = docSnap.id;
-
-        // nếu job.keyword không tồn tại hoặc không chứa searchKeyword thì bỏ qua
-        if (
-          !job.keyword ||
-          !job.keyword.toLowerCase().includes(searchKeyword.toLowerCase())
-        ) {
-          return;
-        }
-
-        // tạo phần tử giống như onEventMessage
-        const jobItem = document.createElement("div");
-        jobItem.className = "job-item";
-        jobItem.dataset.jobId = id;
-        jobItem.innerHTML = `
-          <strong>${job.title}</strong><br>
-          ${job.company_name}<br>
-          ${job.place}<br>
-          ${job.posted_time}
-        `;
-        jobItem.onclick = () => {
-          fetchJobDetails(id);
-          selectJobItem(jobItem);
-        };
-
-        jobListElem.appendChild(jobItem);
-        currentJob++;  // đánh số tiếp theo cho scraped
-      });
-    } catch (err) {
-      console.error("Không load được jobs_self_posted:", err);
-    }
+  // —— Helpers —— 
+  function appendMessage(sender, message) {
+    const chatbox = document.getElementById("chatbox");
+    const div     = document.createElement("div");
+    div.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    chatbox.appendChild(div);
+    chatbox.scrollTop = chatbox.scrollHeight;
   }
 
-  // Hàm dọn dẹp SSE / hủy backend
   function cleanupSearch() {
     if (eventSource) {
       eventSource.close();
       eventSource = null;
     }
     if (currentSearchId) {
-      // Gửi POST để backend set reset_flag ngay
-      fetch("/cancel_search", { method: "POST" }).catch(() => { });
+      fetch("/cancel_search", { method: "POST" }).catch(() => {});
       currentSearchId = null;
     }
   }
 
-  // Đảm bảo gọi cleanup khi reload / back / navigate away
-  window.addEventListener("beforeunload", cleanupSearch);
-  window.addEventListener("pagehide", cleanupSearch);
-  window.addEventListener("unload", cleanupSearch);
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const keyword = form.querySelector('input[name="keyword"]').value.trim();
-    if (!keyword) return;
-
-    // 1) Dọn UI cũ và hủy SSE cũ
-    cleanupSearch();
-    logElem.innerHTML = "";
+  async function loadSelfPostedJobs(keyword) {
     jobListElem.innerHTML = "";
-    jobDetailsElem.innerHTML = "";
     currentJob = 0;
-
-    // Load trước các job tự đăng
-    await loadSelfPostedJobs(keyword);
-
-    // 2) Mở chatbot nếu cần
-    if (!chatboxContainer.style.display || chatboxContainer.style.display === "none") {
-      toggleChatbox();
+    try {
+      const snap = await getDocs(collection(db, "jobs_self_posted"));
+      snap.forEach(doc => {
+        const job = doc.data();
+        if (!job.keyword?.toLowerCase().includes(keyword.toLowerCase())) return;
+        const div = document.createElement("div");
+        div.className    = "job-item";
+        div.dataset.jobId = doc.id;
+        div.innerHTML    = `<strong>${job.title}</strong><br>${job.company_name}<br>${job.place}<br>${job.posted_time}`;
+        div.onclick      = () => {
+          fetchJobDetails(doc.id);
+          selectJobItem(div);
+        };
+        jobListElem.appendChild(div);
+        currentJob++;
+      });
+    } catch (e) {
+      console.error("Lỗi load tự đăng:", e);
     }
-    appendMessage("Chatbot", '<i id="processing-message">Processing your request...</i><br><br>');
+  }
 
-    // 3) Gọi /search lấy search_id
-    const res = await fetch("/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keyword }),
-    });
-    const { search_id } = await res.json();
-    currentSearchId = search_id;
-
-    // 4) Tạo EventSource mới trỏ đến đúng phiên search
-    eventSource = new EventSource(`/stream/${encodeURIComponent(search_id)}`);
-    eventSource.onmessage = onEventMessage;
-    eventSource.onerror = (err) => {
-      console.error("SSE error:", err);
-      cleanupSearch();
-    };
-
-    // 5) Lời chào lần đầu
-    if (currentChatIndex === 0) {
-      setTimeout(() => {
-        appendMessage(
-          "Chatbot",
-          "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type (full-time, part-time, freelance), working hours, location, and benefits. The more details you provide, the better I can help you find the right match!<br><br>"
-        );
-      }, 1000);
-    }
-    currentChatIndex++;
-  });
-
-  function onEventMessage(event) {
-    if (event.data.startsWith("new_job:")) {
-      const job = JSON.parse(event.data.replace("new_job:", ""));
-      const jobItem = document.createElement("div");
-      jobItem.className = "job-item";
-      jobItem.dataset.jobId = job.job_id;
-      jobItem.innerHTML = `<strong>${job.title} — ${++currentJob}</strong><br>
-                             ${job.company_name}<br>
-                             ${job.place}<br>
-                             ${job.posted_time}`;
-      jobItem.onclick = () => {
+  function onEventMessage(e) {
+    if (e.data.startsWith("new_job:")) {
+      const job = JSON.parse(e.data.replace("new_job:", ""));
+      const div = document.createElement("div");
+      div.className    = "job-item";
+      div.dataset.jobId = job.job_id;
+      div.innerHTML    = `<strong>${job.title} — ${++currentJob}</strong><br>${job.company_name}<br>${job.place}<br>${job.posted_time}`;
+      div.onclick      = () => {
         fetchJobDetails(job.job_id);
-        selectJobItem(jobItem);
+        selectJobItem(div);
       };
-      jobListElem.appendChild(jobItem);
+      jobListElem.appendChild(div);
     } else {
       const p = document.createElement("p");
-      p.textContent = event.data;
+      p.textContent = e.data;
       logElem.appendChild(p);
       logElem.scrollTop = logElem.scrollHeight;
     }
   }
 
-  function fetchJobDetails(jobId) {
-    fetch(`/job/${jobId}`)
+  function fetchJobDetails(id) {
+    fetch(`/job/${id}`)
       .then(r => r.json())
       .then(data => {
-        if (!data || !data.job_id) return;
-        // Chọn link & label dựa vào self_posted
-        let btnHtml;
-        if (data.self_posted) {
-          // job tự đăng → link về trang nội bộ
-          btnHtml = `<a href="/my_job/${data.job_id}" target="_blank">
-                       <button class="btn btn-primary" id="btn-details">View Job</button>
-                     </a>`;
-        } else {
-          // job scraped → đi LinkedIn
-          btnHtml = `<a href="https://www.linkedin.com/jobs/view/${data.job_id}" target="_blank">
-                       <button class="btn btn-primary" id="btn-details">View Job on LinkedIn</button>
-                     </a>`;
-        }
+        if (!data.job_id) return;
+        const btn = data.self_posted
+          ? `<a href="/my_job/${data.job_id}" target="_blank"><button class="btn btn-primary">View Job</button></a>`
+          : `<a href="https://www.linkedin.com/jobs/view/${data.job_id}" target="_blank"><button class="btn btn-primary">LinkedIn</button></a>`;
         jobDetailsElem.innerHTML = `
           <h2>${data.title}</h2>
-          ${btnHtml}
+          ${btn}
           <p><strong>Company:</strong> ${data.company_name}</p>
           <p><strong>Location:</strong> ${data.place}</p>
           <p><strong>Posted:</strong> ${data.posted_time}</p>
           <p><strong>Applicants:</strong> ${data.num_applicants}</p>
           <p><strong>Seniority:</strong> ${data.seniority_level}</p>
           <p><strong>Type:</strong> ${data.employment_type}</p>
-          ${!data.self_posted ? `<p><strong>Function:</strong> ${data.job_function}</p>
-                                  <p><strong>Industries:</strong> ${data.industries}</p>` : ""}
+          ${!data.self_posted ? `<p><strong>Function:</strong> ${data.job_function}</p><p><strong>Industries:</strong> ${data.industries}</p>` : ""}
           <p><strong>Description:</strong></p>
           <div>${data.job_description}</div>
         `;
@@ -181,74 +109,75 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(console.error);
   }
 
-  function selectJobItem(item) {
-    document.querySelectorAll(".job-item").forEach((el) => el.classList.remove("selected"));
-    item.classList.add("selected");
+  function selectJobItem(el) {
+    document.querySelectorAll(".job-item").forEach(x => x.classList.remove("selected"));
+    el.classList.add("selected");
   }
 
-  toggleLogBtn.addEventListener("click", () => {
-    const lc = document.getElementById("log-container");
-    lc.style.display = lc.style.display === "none" ? "block" : "none";
-  });
-});
-
-document.addEventListener('DOMContentLoaded', function () {
-  const links = document.querySelectorAll('#chatbox a');
-  links.forEach(link => {
-    link.setAttribute('target', '_blank');
-  });
-});
-
-let chatHistory = [];
-let greeted     = false;
-
-function startChat() {
-  // reset khi search mới
-  chatHistory = [];
-  if (!greeted) {
-    const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job…";
-    chatHistory.push({ role: "system", parts: greeting });
-    appendMessage("Chatbot", greeting);
-    greeted = true;
+  function openChat() {
+    if (!greeted) {
+      const txt = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type, working hours, location, and benefits.";
+      appendMessage("Chatbot", txt);
+      chatHistory.push({ role: "system", parts: txt });
+      greeted = true;
+    }
   }
-}
 
-form.addEventListener("submit", async e => {
-  e.preventDefault();
-  // 1) reset UI, dọn SSE…
-  cleanupSearch();
-  jobListElem.innerHTML = "";
-  jobDetailsElem.innerHTML = "";
-  logElem.innerHTML    = "";
+  // —— Search form handler —— 
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const kw = form.querySelector('input[name="keyword"]').value.trim();
+    if (!kw) return;
 
-  // 2) reset chatHistory và show greeting
-  startChat();
+    cleanupSearch();
+    logElem.innerHTML       = "";
+    jobDetailsElem.innerHTML = "";
+    currentKeyword          = kw;
+    chatHistory             = [];
+    greeted                 = false;
 
-  // 3) gọi /search như bình thường để get job kết quả…
-  //    (EventSource, hiển thị job list, v.v.)
-});
-async function sendMessage() {
-  const input = document.getElementById("input");
-  const msg   = input.value.trim();
-  if (!msg) return;
+    await loadSelfPostedJobs(kw);
+    openChat();
+    chatboxContainer.style.display = "flex";
 
-  // 1) Hiển thị và append user
-  appendMessage("You", msg);
-  chatHistory.push({ role: "user", parts: msg });
-  input.value = "";
-
-  // 2) Gọi API
-  const res = await fetch("/send_message", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: msg,
-      history: chatHistory
-    })
+    const resp = await fetch("/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keyword: kw })
+    });
+    const { search_id } = await resp.json();
+    currentSearchId = search_id;
+    eventSource    = new EventSource(`/stream/${encodeURIComponent(search_id)}`);
+    eventSource.onmessage = onEventMessage;
+    eventSource.onerror   = cleanupSearch;
   });
-  const data = await res.json();
 
-  // 3) Hiện reply và cập nhật lại history
-  appendMessage("Chatbot", data.response);
-  chatHistory = data.history;
-}
+  // —— Chat send handler —— 
+  window.sendMessage = async () => {
+    const msg = inputEl.value.trim();
+    if (!msg) return;
+    appendMessage("You", msg);
+    chatHistory.push({ role: "user", parts: msg });
+    inputEl.value = "";
+
+    const resp = await fetch("/send_message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        keyword: currentKeyword,
+        history: chatHistory,
+        message: msg
+      })
+    });
+    const data = await resp.json();
+    appendMessage("Chatbot", data.response);
+    chatHistory = data.history;
+  };
+
+  // —— Chatbox toggle —— 
+  window.toggleChatbox = () => {
+    chatboxContainer.style.display =
+      chatboxContainer.style.display === "flex" ? "none" : "flex";
+  };
+  chatboxToggleBtn.addEventListener("click", window.toggleChatbox);
+})();
