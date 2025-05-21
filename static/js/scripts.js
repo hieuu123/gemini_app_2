@@ -232,15 +232,11 @@ window.sendMessage = function () {
   // 2) hiệu ứng thinking
   showThinking();
 
-  // 3) POST lên server
+  // 3) POST lên server (chỉ cần gửi message)
   fetch("/send_message", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: message,
-      history: window.chatHistory,
-      keyword: window.currentKeyword
-    })
+    body: JSON.stringify({ message })
   })
     .then(res => res.json())
     .then(data => {
@@ -249,10 +245,11 @@ window.sendMessage = function () {
         appendMessage("Chatbot", "Có lỗi xảy ra, vui lòng thử lại.");
       } else {
         appendMessage("Chatbot", data.response);
-        window.chatHistory = data.history;
+        // 4) lưu lại reply vào lịch sử
+        window.chatHistory.push({ role: "model", parts: data.response });
       }
     })
-    .catch(err => {
+    .catch(() => {
       hideThinking();
       appendMessage("Chatbot", "Có lỗi xảy ra, vui lòng thử lại.");
     });
