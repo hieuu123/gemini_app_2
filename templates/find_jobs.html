@@ -258,34 +258,40 @@
         }
 
         function sendMessage() {
-            const input = document.getElementById('input');
-            const message = input.value;
-            if (message.trim() === '') return;
-
+            const message = inputEl.value.trim();
+            if (!message) return;
+          
+            // 1) Hiển thị tin bạn gửi lên UI & push vào lịch sử
             appendMessage('You', message);
-            input.value = '';
+            chatHistory.push({ role: 'user', parts: message });
+            inputEl.value = '';
+          
+            // 2) Hiệu ứng đang nghĩ
             showThinking();
-
+          
+            // 3) Gửi lên server kèm full history và keyword hiện tại
             fetch('/send_message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message: message }),
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: message,
+                history: chatHistory,
+                keyword: currentKeyword
+              })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                // hideThinking();
-                // appendMessage('Chatbot', data.response);
-                const msg = data.response ?? data.error ?? 'Rất tiếc, có lỗi xảy ra.';
-                appendMessage('Chatbot', msg);
+              hideThinking();
+              // 4) Hiển thị phản hồi của bot & cập nhật lại history
+              appendMessage('Chatbot', data.response);
+              chatHistory = data.history;
             })
-            .catch(error => {
-                hideThinking();
-                console.error('Error:', error);
-                appendMessage('Chatbot', 'Có lỗi xảy ra, vui lòng thử lại.');
+            .catch(err => {
+              hideThinking();
+              console.error(err);
+              appendMessage('Chatbot', 'Có lỗi xảy ra, vui lòng thử lại.');
             });
-        }
+          }          
     </script>
 </body>
 </html>

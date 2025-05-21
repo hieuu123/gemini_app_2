@@ -3,6 +3,11 @@
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 import { db } from "./firebaseConfig.js"; // đảm bảo bạn đã có
 
+const chatboxContainer = document.getElementById("chatbox-container");
+const inputEl = document.getElementById("input");
+let chatHistory = [];          // toàn bộ lịch sử chat
+let currentKeyword = "";          // lưu keyword hiện tại
+
 document.addEventListener("DOMContentLoaded", () => {
   let eventSource = null;
   let currentJob = 0;
@@ -84,6 +89,11 @@ document.addEventListener("DOMContentLoaded", () => {
     jobDetailsElem.innerHTML = "";
     currentJob = 0;
 
+    // 2) lưu keyword, reset lịch sử chat
+    currentKeyword = keyword;
+    chatHistory = [];
+    currentChatIndex = 0;
+
     // Load trước các job tự đăng
     await loadSelfPostedJobs(keyword);
 
@@ -91,6 +101,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!chatboxContainer.style.display || chatboxContainer.style.display === "none") {
       toggleChatbox();
     }
+
+    // Greeting lần đầu
+    if (currentChatIndex === 0) {
+      const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type (full-time, part-time, freelance), working hours, location, and benefits.";
+      appendMessage("Chatbot", greeting);
+      chatHistory.push({ role: "system", parts: greeting });
+    }
+    currentChatIndex++;
+    
     appendMessage("Chatbot", '<i id="processing-message">Processing your request...</i><br><br>');
 
     // 3) Gọi /search lấy search_id
