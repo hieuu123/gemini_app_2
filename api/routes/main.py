@@ -6,7 +6,7 @@ import api.config as config
 # from db.connection import connect_db
 import api.state as state  # import module state
 from api.firebase_config import db
-from api.chat_utils import model, read_knowledge_from_store
+from api.chat_utils import model, read_knowledge_from_store, export_and_update_chat
 import traceback
 
 main_bp = Blueprint("main", __name__)
@@ -163,6 +163,9 @@ def send_message():
     try:
         data       = request.get_json(force=True)
         user_input = (data.get("message") or "").strip()
+        
+        if state.current_chat_index == 0:
+            export_and_update_chat()
         # Tên session chat cuối cùng
         session_name = f"chat{state.current_chat_index - 1}"
 
