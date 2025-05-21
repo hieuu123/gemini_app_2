@@ -1,7 +1,9 @@
+// static/js/scripts.js
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 import { db } from "./firebaseConfig.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+(() => {
+  // ---- 1. Biến toàn cục của module ----
   let eventSource     = null;
   let currentJob      = 0;
   let currentSearchId = null;
@@ -9,23 +11,24 @@ document.addEventListener("DOMContentLoaded", () => {
   let greeted         = false;
   let currentKeyword  = "";
 
+  // ---- 2. Lấy các element ----
   const form             = document.getElementById("job-form");
   const logElem          = document.getElementById("log");
   const jobListElem      = document.getElementById("job-list");
   const jobDetailsElem   = document.getElementById("job-details");
   const chatboxContainer = document.getElementById("chatbox-container");
-  const toggleLogBtn     = document.getElementById("toggle-log");
+  const chatboxToggleBtn = document.getElementById("chatbox-toggle");
+  const inputEl          = document.getElementById("input");
 
-  // 1) Helper để append message vào chatbox UI
+  // ---- 3. Helpers ----
   function appendMessage(sender, message) {
     const chatbox = document.getElementById("chatbox");
-    const msgDiv  = document.createElement("div");
-    msgDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
-    chatbox.appendChild(msgDiv);
+    const div     = document.createElement("div");
+    div.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    chatbox.appendChild(div);
     chatbox.scrollTop = chatbox.scrollHeight;
   }
 
-  // 2) Dọn SSE cũ và flag tìm kiếm
   function cleanupSearch() {
     if (eventSource) {
       eventSource.close();
@@ -37,23 +40,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 3) Mở chat và chạy greeting 1 lần
-  function openChat() {
-    if (!greeted) {
-      const greeting = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type, working hours, location, and benefits.";
-      appendMessage("Chatbot", greeting);
-      chatHistory.push({ role: "system", parts: greeting });
-      greeted = true;
-    }
-  }
-
-  // 4) Load self-posted jobs (không block chat)
   async function loadSelfPostedJobs(keyword) {
+    jobListElem.innerHTML = "";
+    currentJob = 0;
     try {
       const snap = await getDocs(collection(db, "jobs_self_posted"));
       snap.forEach(docSnap => {
         const job = docSnap.data();
-        if (!job.keyword || !job.keyword.toLowerCase().includes(keyword.toLowerCase())) return;
+        if (!job.keyword?.toLowerCase().includes(keyword.toLowerCase())) return;
         const div = document.createElement("div");
         div.className    = "job-item";
         div.dataset.jobId = docSnap.id;
@@ -66,11 +60,10 @@ document.addEventListener("DOMContentLoaded", () => {
         currentJob++;
       });
     } catch (e) {
-      console.error("Không load được self-posted jobs:", e);
+      console.error("Lỗi load self-posted:", e);
     }
   }
 
-  // 5) SSE callback để append từng job mới / log
   function onEventMessage(event) {
     if (event.data.startsWith("new_job:")) {
       const job = JSON.parse(event.data.replace("new_job:", ""));
@@ -91,18 +84,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 6) Fetch chi tiết job khi click
   function fetchJobDetails(jobId) {
     fetch(`/job/${jobId}`)
       .then(r => r.json())
       .then(data => {
         if (!data.job_id) return;
-        const btnHtml = data.self_posted
+        const btn = data.self_posted
           ? `<a href="/my_job/${data.job_id}" target="_blank"><button class="btn btn-primary">View Job</button></a>`
           : `<a href="https://www.linkedin.com/jobs/view/${data.job_id}" target="_blank"><button class="btn btn-primary">View on LinkedIn</button></a>`;
         jobDetailsElem.innerHTML = `
           <h2>${data.title}</h2>
-          ${btnHtml}
+          ${btn}
           <p><strong>Company:</strong> ${data.company_name}</p>
           <p><strong>Location:</strong> ${data.place}</p>
           <p><strong>Posted:</strong> ${data.posted_time}</p>
@@ -122,36 +114,39 @@ document.addEventListener("DOMContentLoaded", () => {
     el.classList.add("selected");
   }
 
-  // 7) Khi user bấm Search
+  function openChat() {
+    if (!greeted) {
+      const txt = "Hello! I’m Jack, your job search assistant. Tell me about your ideal job—things like salary, job type, working hours, location, and benefits.";
+      appendMessage("Chatbot", txt);
+      chatHistory.push({ role: "system", parts: txt });
+      greeted = true;
+    }
+  }
+
+  // ---- 4. Bắt event Search ----
   form.addEventListener("submit", async e => {
     e.preventDefault();
-    const keyword = form.querySelector('input[name="keyword"]').value.trim();
-    if (!keyword) return;
+    const kw = form.querySelector('input[name="keyword"]').value.trim();
+    if (!kw) return;
 
-    // dọn UI & SSE cũ
+    // reset UI + SSE + chat state
     cleanupSearch();
-    logElem.innerHTML      = "";
-    jobListElem.innerHTML  = "";
+    logElem.innerHTML = "";
     jobDetailsElem.innerHTML = "";
-    currentJob             = 0;
-
-    // reset chat state
-    currentKeyword = keyword;
+    currentKeyword = kw;
     chatHistory    = [];
     greeted        = false;
 
-    // load self-posted + open chat
-    await loadSelfPostedJobs(keyword);
+    // load tự đăng → mở chat + greeting
+    await loadSelfPostedJobs(kw);
     openChat();
-    if (!chatboxContainer.style.display || chatboxContainer.style.display === "none") {
-      chatboxContainer.style.display = "flex";
-    }
+    chatboxContainer.style.display = "flex";
 
-    // gọi backend /search và subscribe SSE
+    // gọi /search SSE
     const r = await fetch("/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keyword })
+      body: JSON.stringify({ keyword: kw })
     });
     const { search_id } = await r.json();
     currentSearchId = search_id;
@@ -160,15 +155,13 @@ document.addEventListener("DOMContentLoaded", () => {
     eventSource.onerror   = cleanupSearch;
   });
 
-  // 8) Gọi chat endpoint khi user gửi message
-  async function sendMessage() {
-    const input = document.getElementById("input");
-    const msg   = input.value.trim();
+  // ---- 5. Bắt event gửi chat ----
+  window.sendMessage = async () => {
+    const msg = inputEl.value.trim();
     if (!msg) return;
-
     appendMessage("You", msg);
     chatHistory.push({ role: "user", parts: msg });
-    input.value = "";
+    inputEl.value = "";
 
     const r = await fetch("/send_message", {
       method: "POST",
@@ -182,20 +175,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = await r.json();
     appendMessage("Chatbot", data.response);
     chatHistory = data.history;
-  }
-  window.sendMessage = sendMessage;
-
-  // 9) Toggle chatbox button
-  window.toggleChatbox = () => {
-    if (!chatboxContainer.style.display || chatboxContainer.style.display === "none") {
-      chatboxContainer.style.display = "flex";
-    } else {
-      chatboxContainer.style.display = "none";
-    }
   };
 
-  toggleLogBtn.addEventListener("click", () => {
-    const lc = document.getElementById("log-container");
-    lc.style.display = lc.style.display === "none" ? "block" : "none";
-  });
-});
+  // ---- 6. Toggle chatbox ----
+  window.toggleChatbox = () => {
+    chatboxContainer.style.display = (chatboxContainer.style.display === "flex")
+      ? "none"
+      : "flex";
+  };
+
+  chatboxToggleBtn.addEventListener("click", window.toggleChatbox);
+})();
