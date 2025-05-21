@@ -163,33 +163,31 @@ def send_message():
     try:
         data       = request.get_json(force=True)
         user_input = (data.get("message") or "").strip()
-        
+        keyword    = (data.get("keyword") or "").strip().lower()
+
+        # 1) Nếu chưa có session chat nào, khởi tạo
         if state.current_chat_index == 0:
             export_and_update_chat()
-        # Tên session chat cuối cùng
+
         session_name = f"chat{state.current_chat_index - 1}"
 
-        # 1) Kiểm tra session đã được tạo chưa
-        if session_name not in state.chat_sessions:
-            return jsonify({
-                "error": "Phiên chat không tìm thấy, vui lòng thực hiện tìm kiếm mới."
-            }), 400
+        # 2) Load lại knowledge trước khi trả lời
+        jobs = read_knowledge_from_store(keyword)
+        if jobs:
+            chat = state.chat_sessions[session_name]
+            chat.send_message([f"Current job listings:\n{json.dumps(jobs, ensure_ascii=False)}"])
 
+        # 3) Gửi user message
         chat = state.chat_sessions[session_name]
-
-        # 2) Gửi user message (chỉ truyền nội dung user, không include system)
         response = chat.send_message([user_input])
 
-        # 3) Lấy kết quả
+        # 4) Trả về cho client
         text = response.text or ""
-        return jsonify({
-            "response": markdown2.markdown(text)
-        })
+        return jsonify({"response": markdown2.markdown(text)})
+
     except Exception:
         current_app.logger.error("Error in /send_message:\n" + traceback.format_exc())
-        return jsonify({
-            "error": "Internal server error, xin thử lại."
-        }), 500
+        return jsonify({"error": "Internal server error, xin thử lại."}), 500
 
 
 
