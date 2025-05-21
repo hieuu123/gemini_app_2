@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const jobListElem = document.getElementById("job-list");
   const jobDetailsElem = document.getElementById("job-details");
   const chatboxContainer = document.getElementById("chatbox-container");
-  const toggleLogBtn = document.getElementById("log-container");
+  // const toggleLogBtn = document.getElementById("log-container");
 
   async function loadSelfPostedJobs(searchKeyword) {
     try {
@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
       chatHistory.push({ role: "system", parts: greeting });
     }
     currentChatIndex++;
-    
+
     appendMessage("Chatbot", '<i id="processing-message">Processing your request...</i><br><br>');
 
     // 3) Gọi /search lấy search_id
@@ -205,10 +205,10 @@ document.addEventListener("DOMContentLoaded", () => {
     item.classList.add("selected");
   }
 
-  toggleLogBtn.addEventListener("click", () => {
-    const lc = document.getElementById("log-container");
-    lc.style.display = lc.style.display === "none" ? "block" : "none";
-  });
+  // toggleLogBtn.addEventListener("click", () => {
+  //   const lc = document.getElementById("log-container");
+  //   lc.style.display = lc.style.display === "none" ? "block" : "none";
+  // });
 });
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -217,3 +217,43 @@ document.addEventListener('DOMContentLoaded', function () {
     link.setAttribute('target', '_blank');
   });
 });
+
+// override nút onclick gọi này
+window.sendMessage = function () {
+  const inputEl = document.getElementById("input");
+  const message = inputEl.value.trim();
+  if (!message) return;
+
+  // 1) Hiển thị user lên UI và ghi vào lịch sử toàn cầu
+  appendMessage("You", message);
+  window.chatHistory.push({ role: "user", parts: message });
+  inputEl.value = "";
+
+  // 2) hiệu ứng thinking
+  showThinking();
+
+  // 3) POST lên server
+  fetch("/send_message", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: message,
+      history: window.chatHistory,
+      keyword: window.currentKeyword
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      hideThinking();
+      if (data.error) {
+        appendMessage("Chatbot", "Có lỗi xảy ra, vui lòng thử lại.");
+      } else {
+        appendMessage("Chatbot", data.response);
+        window.chatHistory = data.history;
+      }
+    })
+    .catch(err => {
+      hideThinking();
+      appendMessage("Chatbot", "Có lỗi xảy ra, vui lòng thử lại.");
+    });
+};
