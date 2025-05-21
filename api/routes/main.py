@@ -160,13 +160,23 @@ def job(job_id):
 
 @main_bp.route("/send_message", methods=["POST"])
 def send_message():
+    # 1) Đọc JSON payload thật chặt
     try:
-        payload    = request.get_json()
-        history    = payload.get("history", [])
-        user_input = payload.get("message", "").strip()
-        keyword    = payload.get("keyword", "")
+        payload = request.get_json(force=True)
+    except Exception as e:
+        current_app.logger.error(f"/send_message: invalid JSON: {e}")
+        return jsonify({"error": "Invalid JSON"}), 400
 
-        # chèn knowledge vào đầu history
+    # 2) Lấy message, history, keyword với mặc định an toàn
+    user_input = (payload.get("message") or "").strip()
+    history    = payload.get("history") or []
+    keyword    = (payload.get("keyword") or "").strip()
+
+    if not user_input:
+        return jsonify({"error": "Empty message"}), 400
+
+    try:
+        # 3) Chèn knowledge lên đầu history nếu có
         jobs = read_knowledge_from_store(keyword)
         if jobs:
             history.insert(0, {
@@ -174,24 +184,21 @@ def send_message():
                 "parts": "Current job listings:\n" + json.dumps(jobs, ensure_ascii=False)
             })
 
-        # append user
+        # 4) Append user và tạo phiên chat mới
         history.append({"role": "user", "parts": user_input})
-
-        # start chat & send
         chat     = model.start_chat(history=history)
         response = chat.send_message([user_input])
 
-        # lấy text & append
+        # 5) Lấy text, append vào history, trả về client
         text = response.text or ""
         history.append({"role": "model", "parts": text})
-
         return jsonify({
             "response": markdown2.markdown(text),
             "history":  history
         })
-    except Exception:
-        # log full traceback vào console/log của Flask
+    except Exception as e:
+        # 6) Log stacktrace thật chi tiết, trả JSON lỗi
         current_app.logger.error("Error in /send_message:\n" + traceback.format_exc())
-        # trả về JSON lỗi để client không bị crash khi gọi res.json()
         return jsonify({"error": "Internal server error, please try again."}), 500
+
 
