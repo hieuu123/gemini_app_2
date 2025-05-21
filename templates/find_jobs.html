@@ -204,6 +204,8 @@
     <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
     
     <script>
+        const chatboxContainer = document.getElementById("chatbox-container");
+        const inputEl = document.getElementById("input");
         function toggleChatbox() {
             const chatboxContainer = document.getElementById('chatbox-container');
             const chatboxToggle = document.getElementById('chatbox-toggle');
