@@ -180,7 +180,7 @@ def send_message():
         jobs = read_knowledge_from_store(keyword)
         if jobs:
             history.insert(0, {
-                "role": "system",
+                "role": "user",
                 "parts": "Current job listings:\n" + json.dumps(jobs, ensure_ascii=False)
             })
 
